@@ -13,8 +13,8 @@ def get_argparser():
     # subparaser for building permit-desc classifiers
     parser_process = subparsers.add_parser(
         "process", help="process audio files")
-    parser_process.add_argument("dataset", type=str, help="the dataset to process")
-    parser_process.add_argument("--input", type=str, required=True, help="location of input data")
-    parser_process.add_argument("--output", type=str, required=True, help="location of the output folder")
+    parser_process.add_argument("--root-folder", dest="root_folder",
+                                type=str, required=True, help="location of input data")
+    parser_process.add_argument("--output-folder", dest="output_folder",
+                                type=str, required=True, help="location of the output folder")
     return parser
-
