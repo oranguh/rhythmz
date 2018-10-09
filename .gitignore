@@ -1,3 +1,5 @@
 .python-version
 *.pyc
 .vscode
+indic_*
+temp
