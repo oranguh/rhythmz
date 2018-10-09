@@ -17,4 +17,6 @@ def get_argparser():
                                 type=str, required=True, help="location of input data")
     parser_process.add_argument("--output-folder", dest="output_folder",
                                 type=str, required=True, help="location of the output folder")
+    parser_process.add_argument("--praat-path", dest="praat_path", type=str,
+                                default="./praat", help="location of the praat executable")
     return parser
