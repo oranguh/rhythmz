@@ -1,6 +1,8 @@
 import logging
+from collections import OrderedDict
 
 import torch
+import numpy as np
 from torch import nn
 import torch.nn.functional as F
 
@@ -83,9 +85,9 @@ class AudioClassifier(nn.Module):
 
     def forward(self, x):
         # x is [number of input datapoints, size of datapoint]
-        assert len(x.size()) == 2
+        # assert len(x.size()) == 2
 
-        out = torch.empty(x.size(0), self.n_classes)
+        out = torch.zeros(len(x), self.n_classes)
         # transform each to [batch, input_size] per datapoint
         # get the features, combine them
         # classify it!
