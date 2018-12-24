@@ -43,5 +43,4 @@ class AudioDataLoader(Dataset):
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
         sound, sample_rate = torchaudio.load(aud_path)
-
         return sound, self.one_hot(cl)

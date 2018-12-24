@@ -26,6 +26,11 @@ if __name__ == '__main__':
         data_process.process()
     elif args.module == "train":
         dl = dataloaders.AudioDataLoader("indic_data/")
-        print(dl[0])
+        d = 9999999999
+        for i in range(len(dl)):
+            data, cl= dl[i]
+            d = min(data.size(0), d)
+        print(d)
+
     else:
         raise ValueError("Unknown module: {}".format(args.module))
