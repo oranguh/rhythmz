@@ -32,5 +32,6 @@ def get_argparser():
     parser_train = subparsers.add_parser("train", help="train the model")
     parser_train.add_argument("--data", dest="data",
                                 type=str, required=True, help="location of input data")
-
+    parser_train.add_argument("--batch-size", dest="batch_size",
+                                type=str, default=2, help="batch size for training")
     return parser

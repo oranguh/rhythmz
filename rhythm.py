@@ -1,13 +1,13 @@
 import logging
 
 from process import process
-from data import dataloaders
+from models import trainer
 from args_utils import get_argparser
 
 
 if __name__ == '__main__':
 
-    
+
     log = logging.getLogger("rhythm")
 
     args = get_argparser().parse_args()
@@ -25,12 +25,7 @@ if __name__ == '__main__':
         data_process = process.Process(args)
         data_process.process()
     elif args.module == "train":
-        dl = dataloaders.AudioDataLoader("indic_data/")
-        d = 9999999999
-        for i in range(len(dl)):
-            data, cl= dl[i]
-            d = min(data.size(0), d)
-        print(d)
-
+        trainer = trainer.Trainer(args)
+        trainer.train()
     else:
         raise ValueError("Unknown module: {}".format(args.module))

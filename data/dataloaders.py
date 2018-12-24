@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 log = logging.getLogger(__name__)
 
 
-class AudioDataLoader(Dataset):
+class AudioDataset(Dataset):
 
     def __init__(self, root_dir):
         self.root_dir = root_dir
