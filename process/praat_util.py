@@ -48,10 +48,12 @@ class PraatUtil(object):
             smoothing_freq {int} -- Smoothing frequency
         """
 
-        script_content = "Read from file... {}\n".format(os.path.abspath(source_file))
+        script_content = "Read from file... {}\n".format(
+            os.path.abspath(source_file))
         script_content += "Filter (stop Hann band)... {} {} {}\n".format(
             from_freq, to_freq, smoothing_freq)
-        script_content += "Write to WAV file... {}\n".format(os.path.abspath(target_file))
+        script_content += "Write to WAV file... {}\n".format(
+            os.path.abspath(target_file))
         self.execute_script(script_content)
 
     def pass_hann_band_filter(self, source_file, target_file, from_freq, to_freq, smoothing_freq):
@@ -64,8 +66,10 @@ class PraatUtil(object):
             to_freq {int} -- To Frequence
             smoothing_freq {int} -- Smoothing frequency
         """
-        script_content = "Read from file... {}\n".format(os.path.abspath(source_file))
+        script_content = "Read from file... {}\n".format(
+            os.path.abspath(source_file))
         script_content += "Filter (pass Hann band)... {} {} {}\n".format(
             from_freq, to_freq, smoothing_freq)
-        script_content += "Write to WAV file... {}\n".format(os.path.abspath(target_file))
+        script_content += "Write to WAV file... {}\n".format(
+            os.path.abspath(target_file))
         self.execute_script(script_content)

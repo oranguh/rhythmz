@@ -9,6 +9,10 @@ class Process(object):
     def __init__(self, args):
         self.root_folder = args.root_folder
         self.output_folder = args.output_folder
+        self.filter_type = args.filter_type
+        self.freq_from = args.freq_from
+        self.freq_to = args.freq_to
+        self.freq_smooth = args.freq_smooth
         self.praat_util = PraatUtil(args.praat_path)
 
     def _mkdir(self, path):
@@ -17,8 +21,15 @@ class Process(object):
 
     def _process_file(self, source_file, target_file):
         log.debug("Processing file: {}".format(source_file))
-        self.praat_util.stop_hann_band_filter(
-            source_file, target_file, 500, 99999, 100)
+        if self.filter_type == "stop":
+            self.praat_util.stop_hann_band_filter(
+                source_file, target_file, self.freq_from, self.freq_to, self.freq_smooth)
+        elif self.filter_type == "pass":
+            self.praat_util.pass_hann_band_filter(
+                source_file, target_file, self.freq_from, self.freq_to, self.freq_smooth)
+        else:
+            raise ValueError(
+                "Unknown filter type: {}".format(self.filter_type))
         log.debug("Output destination: {}".format(target_file))
 
     def process(self):
