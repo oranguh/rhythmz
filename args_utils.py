@@ -28,7 +28,9 @@ def get_argparser():
                                 default=999999, help="frequency range end for filter")
     parser_process.add_argument("--freq-smooth", dest="freq_smooth", type=int,
                                 default=100, help="frequency for smoothing")
-    
+
     parser_train = subparsers.add_parser("train", help="train the model")
+    parser_train.add_argument("--data", dest="data",
+                                type=str, required=True, help="location of input data")
 
     return parser
