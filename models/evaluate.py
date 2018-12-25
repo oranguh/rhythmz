@@ -7,7 +7,8 @@ log = logging.getLogger(__name__)
 
 
 class ConfusionMatrix(object):
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         self.mat = defaultdict(int)
         self.instances = []
 
@@ -32,20 +33,19 @@ class ConfusionMatrix(object):
     def pprint(self):
         classes = self.classes()
 
-        log.info("Confusion Matrix: ")
-        log.info("\n\tCorrect")
-        for cl in classes:
-            log.info("\t{}: {}".format(cl, self.mat[(cl, cl)]))
+        if self.verbose:
+            log.info("Confusion Matrix: ")
+            log.info("\n\tCorrect")
+            for cl in classes:
+                log.info("\t{}: {}".format(cl, self.mat[(cl, cl)]))
 
-        log.info("\n\tIncorrect")
-        for cl1 in classes:
-            for cl2 in classes:
-                if cl1 == cl2:
-                    continue
-                log.info("\t(True: {}, Predicted: {}):: {}".format(
-                    cl1, cl2, self.mat[(cl1, cl2)]))
-
-        log.info("\n\tPer class accuracy: ")
+            log.info("\n\tIncorrect")
+            for cl1 in classes:
+                for cl2 in classes:
+                    if cl1 == cl2:
+                        continue
+                    log.info("\t(True: {}, Predicted: {}):: {}".format(
+                        cl1, cl2, self.mat[(cl1, cl2)]))
 
         y_true, y_pred = self._get_ys()
         report = metrics.classification_report(y_true, y_pred)

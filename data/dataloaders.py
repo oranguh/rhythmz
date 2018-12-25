@@ -3,6 +3,7 @@ import random
 import logging
 
 import torchaudio
+from torchaudio.transforms import Scale
 import numpy as np
 
 from torch.utils.data import Dataset
@@ -31,6 +32,9 @@ class AudioDataset(Dataset):
             idx, cl) in enumerate(sorted(classes))}
         self.idx_to_class = {idx: cl for (
             cl, idx) in self.class_to_idx.items()}
+        self.n_classes = len(self.class_to_idx)
+        # TODO: explore more transforms
+        self.transforms = Scale()
 
     def __len__(self):
         return len(self.data)
@@ -43,4 +47,5 @@ class AudioDataset(Dataset):
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
         sound, sample_rate = torchaudio.load(aud_path)
+        sound = self.transforms(sound)
         return sound, self.one_hot(cl)

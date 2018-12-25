@@ -1,6 +1,19 @@
 import argparse
 
 
+def add_train_args(parser):
+    parser.add_argument("--batch-size", dest="batch_size",
+                        type=int, default=8, help="batch size for training")
+    parser.add_argument("--epochs", type=int, default=1,
+                        help="batch size for training")
+    parser.add_argument("--results-path", dest="results_path", type=str,
+                        default="results", help="location to store results")
+    parser.add_argument("--model-id", dest="model_id",
+                        type=str, required=True, help="id of the experiment")
+    parser.add_argument("--device", type=str, default="cpu",
+                        help="device to train model on")
+
+
 def get_argparser():
     parser = argparse.ArgumentParser(description='TODO')
     parser.add_argument('--verbose', dest='verbose', default=False,
@@ -31,7 +44,6 @@ def get_argparser():
 
     parser_train = subparsers.add_parser("train", help="train the model")
     parser_train.add_argument("--data", dest="data",
-                                type=str, required=True, help="location of input data")
-    parser_train.add_argument("--batch-size", dest="batch_size",
-                                type=int, default=8, help="batch size for training")
+                              type=str, required=True, help="location of input data")
+    add_train_args(parser_train)
     return parser

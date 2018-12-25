@@ -48,6 +48,8 @@ class AudioClassifier(nn.Module):
             out = self.layers(test_input)
             self.feature_size = np.prod(out.size())
 
+        log.info("Feature Size: {}".format(self.feature_size))
+
         clf_layers = OrderedDict()
         clf_layers["dropout_0"] = nn.Dropout(0.1)
         clf_layers["linear_1"] = nn.Linear(self.feature_size, 256)
@@ -57,7 +59,7 @@ class AudioClassifier(nn.Module):
 
         self.classifier = nn.Sequential(clf_layers)
 
-        log.debug("Created model : {}".format(self))
+        log.info("Created model : {}".format(self))
 
     def stack_strides(self, x):
         assert len(x.size()) == 1
@@ -95,6 +97,8 @@ class AudioClassifier(nn.Module):
             stacked = self.stack_strides(data_point)
             features = self.layers(stacked.unsqueeze(1))
             features = features.squeeze()
+            # flatten
+            features = features.view(-1, self.feature_size)
             features = self.combine_stride_features(features)
             out[idx] = self.classifier(features.unsqueeze(0)).squeeze()
 
