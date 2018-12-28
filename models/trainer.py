@@ -110,14 +110,12 @@ class Trainer:
             train_metrics = self.train_epoch(epoch, optimizer, "train")
             val_metrics = self.train_epoch(epoch, None, "val")
 
-            print(val_metrics)
-
             torch.save(val_metrics, os.path.join(
                 epochs_path, "{}_val_metrics.pkl".format(epoch)))
             torch.save(train_metrics, os.path.join(
                 epochs_path, "{}_train_metrics.pkl".format(epoch)))
 
-            val_score = None  # TODO
+            val_score = val_metrics["micro avg"]["f1-score"]
             if best_val_score < val_score:
                 log.info("Validation Score {} exceeds best score of {}. Saving new best model".format(
                     val_score, best_val_score))

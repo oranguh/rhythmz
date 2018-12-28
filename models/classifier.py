@@ -19,6 +19,7 @@ def add_vgg_conv_block(index, layers, in_channels, out_channels, n_kernels, pool
         out_channels, out_channels, n_kernels)
     layers["relu_{}".format(index)] = nn.ReLU(inplace=True)
     layers["pool_{}".format(index)] = nn.MaxPool1d(pool_size)
+    index += 1
     return index
 
 
@@ -39,7 +40,7 @@ class AudioClassifier(nn.Module):
         index = add_vgg_conv_block(index, layers, 16, 32, 3, 4)
         index = add_vgg_conv_block(index, layers, 32, 64, 3, 4)
         index = add_vgg_conv_block(index, layers, 64, 128, 3, 4)
-        index = add_vgg_conv_block(index, layers, 128, 256, 3, 4)
+        #index = add_vgg_conv_block(index, layers, 128, 256, 3, 4)
 
         self.layers = nn.Sequential(layers)
 
