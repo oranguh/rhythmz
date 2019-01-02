@@ -9,14 +9,14 @@ import torch.nn.functional as F
 log = logging.getLogger(__name__)
 
 
-def add_vgg_conv_block(index, layers, in_channels, out_channels, n_kernels, pool_size):
+def add_vgg_conv_block(index, layers, in_channels, out_channels, kernel_size, pool_size, stride=1):
     layers["conv_{}".format(index)] = nn.Conv1d(
-        in_channels, out_channels, n_kernels)
+        in_channels, out_channels, kernel_size, stride=stride)
     layers["relu_{}".format(index)] = nn.ReLU(inplace=True)
     index += 1
 
     layers["conv_{}".format(index)] = nn.Conv1d(
-        out_channels, out_channels, n_kernels)
+        out_channels, out_channels, kernel_size, stride=stride)
     layers["relu_{}".format(index)] = nn.ReLU(inplace=True)
     layers["pool_{}".format(index)] = nn.MaxPool1d(pool_size)
     index += 1
@@ -36,11 +36,11 @@ class AudioClassifier(nn.Module):
         layers = OrderedDict()
 
         index = 1
-        index = add_vgg_conv_block(index, layers, 1, 16, 9, 16)
+        index = add_vgg_conv_block(index, layers, 1, 16, 40, 16, stride=4)
         index = add_vgg_conv_block(index, layers, 16, 32, 3, 4)
-        index = add_vgg_conv_block(index, layers, 32, 64, 3, 4)
-        index = add_vgg_conv_block(index, layers, 64, 128, 3, 4)
-        #index = add_vgg_conv_block(index, layers, 128, 256, 3, 4)
+        # index = add_vgg_conv_block(index, layers, 32, 64, 3, 4)
+        # index = add_vgg_conv_block(index, layers, 64, 128, 3, 4)
+        # index = add_vgg_conv_block(index, layers, 128, 256, 3, 4)
 
         self.layers = nn.Sequential(layers)
 

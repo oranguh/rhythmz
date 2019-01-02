@@ -37,7 +37,7 @@ class Trainer:
                 self.datasets[s], batch_size=args.batch_size, collate_fn=collate_fn)
 
         self.clf = classifier.AudioClassifier(
-            "MoT", 16256, 4069, self.datasets["train"].n_classes)
+            "MoT", 4096, 1024, self.datasets["train"].n_classes)
 
         # TODO add resume code
 
@@ -61,6 +61,9 @@ class Trainer:
         epoch_samples = 0
         start_time = time.time()
 
+        correct = 0
+        total = 0
+
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
             x = [_.to(self.device) for _ in x]
             y = y.to(self.device)
@@ -70,12 +73,18 @@ class Trainer:
                 loss = self.criterion(output, y.argmax(1))
                 cm.add_many(y.argmax(1), output.argmax(1))
 
+                correct += (y.argmax(1) == output.argmax(1)).sum().item()
+                total += len(x)
+
             if split == "train":
                 loss.backward()
                 optimizer.step()
 
             if batch_idx % 10 == 0:
-                log.info("{}: {}".format(batch_idx, loss.item()))
+                log.info("{}: Loss: {}, Accuracy: {}".format(
+                    batch_idx, loss.item(), correct/total))
+                correct = 0
+                total = 0
 
             # get un-normalized loss
             batch_loss = loss.item() * len(x)
