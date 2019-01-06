@@ -26,7 +26,7 @@ def add_vgg_conv_block(index, layers, in_channels, out_channels, kernel_size, po
 
 
 class AudioClassifier(nn.Module):
-    def __init__(self, combine, input_size, input_stride, n_classes):
+    def __init__(self, combine, input_size, input_stride, n_classes, device):
         super().__init__()
 
         assert combine in {"MoT"}
@@ -34,6 +34,7 @@ class AudioClassifier(nn.Module):
         self.n_classes = n_classes
         self.input_stride = input_stride
         self.combine = combine
+        self.device = device
 
         layers = OrderedDict()
 
@@ -74,7 +75,7 @@ class AudioClassifier(nn.Module):
         while start < in_size:
             split = x[start: (start+self.input_size)]
             if split.size(0) < self.input_size:
-                zero_pad = torch.zeros(self.input_size - split.size(0))
+                zero_pad = torch.zeros(self.input_size - split.size(0)).to(self.device)
                 split = torch.cat((split, zero_pad))
 
             stacked.append(split)
@@ -92,7 +93,7 @@ class AudioClassifier(nn.Module):
         # x is [number of input datapoints, size of datapoint]
         # assert len(x.size()) == 2
 
-        out = torch.zeros(len(x), self.n_classes)
+        out = torch.zeros(len(x), self.n_classes).to(self.device)
         # transform each to [batch, input_size] per datapoint
         # get the features, combine them
         # classify it!

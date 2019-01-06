@@ -1,5 +1,9 @@
 import logging
 
+
+import torch
+import numpy as np
+
 from process import process
 from models import trainer
 from args_utils import get_argparser
@@ -20,6 +24,10 @@ if __name__ == '__main__':
 
     if args.module is None:
         raise ValueError("Provide a module argument (see --help)")
+
+    # seed for reproducability
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     if args.module == "process":
         data_process = process.Process(args)

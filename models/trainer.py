@@ -36,16 +36,19 @@ class Trainer:
             self.dataloaders[s] = DataLoader(
                 self.datasets[s], batch_size=args.batch_size, collate_fn=collate_fn)
 
-        self.clf = classifier.AudioClassifier(
-            "MoT", 4096, 1024, self.datasets["train"].n_classes)
+        self.device = torch.device(args.device)
 
+        self.clf = classifier.AudioClassifier(
+            "MoT", 4096, 1024, self.datasets["train"].n_classes, self.device)
+
+        self.clf = self.clf.to(self.device)
         # TODO add resume code
 
         self.n_epochs = args.epochs
         self.results_path = args.results_path
         mkdir(self.results_path)
         self.model_id = args.model_id
-        self.device = torch.device(args.device)
+
 
         self.criterion = CrossEntropyLoss().to(self.device)
 
@@ -55,6 +58,8 @@ class Trainer:
             self.clf.train()
         else:
             self.clf.eval()
+
+        self.clf = self.clf.to(self.device)
 
         cm = evaluate.ConfusionMatrix()
         epoch_loss = 0.0
@@ -71,7 +76,7 @@ class Trainer:
             with torch.set_grad_enabled(split == "train"):
                 output = self.clf(x)
                 loss = self.criterion(output, y.argmax(1))
-                cm.add_many(y.argmax(1), output.argmax(1))
+                cm.add_many(y.argmax(1).detach().cpu().numpy(), output.argmax(1).detach().cpu().numpy())
 
                 correct += (y.argmax(1) == output.argmax(1)).sum().item()
                 total += len(x)
@@ -110,7 +115,6 @@ class Trainer:
         mkdir(epochs_path)
 
         optimizer = Adam(self.clf.parameters())
-        self.clf = self.clf.to(self.device)
 
         best_val_score = 0
         best_model = self.clf.state_dict()
