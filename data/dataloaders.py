@@ -3,7 +3,8 @@ import random
 import logging
 
 import torchaudio
-from torchaudio.transforms import Scale
+from torchaudio.transforms import Scale, Compose
+from data.transforms import MelSpectogram
 import numpy as np
 
 from torch.utils.data import Dataset
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 class AudioDataset(Dataset):
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, sample_rate=16000):
         self.root_dir = root_dir
         self.class_to_idx = {}
         classes = set()
