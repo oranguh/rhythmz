@@ -42,22 +42,7 @@ class ComputeMean:
             aud, cl = data[idx]
             std += ((mean - aud.view(-1)) ** 2).sum()
             n += aud.size(0)
-        
+
         std /= n
 
         log.info("Std computed: {}".format(std))
-
-        # sum = 0.0
-        # n = 0
-        # mean = 5.592183756080553
-        # var = 3105.0013460920486
-        # std = 55.7225389415
-        # for idx in range(len(self.data)):
-        #     spec, cl = self.data[idx]
-        #     sum += ((spec - mean) ** 2).sum().sum()
-        #     n += spec.size(0) * spec.size(1)
-
-        #     if idx % 10 == 0:
-        #         print("{}: Sum: {}, N: {}".format(idx, sum, n))
-
-        # print("Mean: {}".format(sum / n))
