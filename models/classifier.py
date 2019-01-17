@@ -29,7 +29,7 @@ class AudioClassifier(nn.Module):
     def __init__(self, combine, input_size, input_stride, n_classes, device):
         super().__init__()
 
-        assert combine in {"MoT"}
+        assert combine in {"MoT", "LSTM"}
         self.input_size = input_size
         self.n_classes = n_classes
         self.input_stride = input_stride
@@ -87,6 +87,8 @@ class AudioClassifier(nn.Module):
         if self.combine == "MoT":
             feats, _ = features.max(0)
             return feats
+        elif self.combine == "LSTM":
+            pass
         raise ValueError("Unavailable method '{}'".format(self.combine))
 
     def forward(self, x):

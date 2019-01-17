@@ -13,8 +13,6 @@ from data.transforms import MelSpectogram
 
 import matplotlib.pyplot as plt
 
-from python_speech_features import mfcc
-
 log = logging.getLogger(__name__)
 
 

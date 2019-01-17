@@ -12,7 +12,6 @@ from data.stats import ComputeMean
 
 if __name__ == '__main__':
 
-
     log = logging.getLogger("rhythm")
 
     args = get_argparser().parse_args()
@@ -22,13 +21,16 @@ if __name__ == '__main__':
     else:
         logging.basicConfig(level=logging.INFO)
 
-
     if args.module is None:
         raise ValueError("Provide a module argument (see --help)")
 
     # seed for reproducability
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
+    if args.device != "cpu":
+        torch.cuda.manual_seed_all(SEED)
+
+    log.info("Arguments: {}".format(args))
 
     if args.module == "process":
         data_process = process.Process(args)
