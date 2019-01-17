@@ -6,11 +6,13 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torch.nn.modules.loss import CrossEntropyLoss
+from torchaudio.transforms import Compose
 
 from models import evaluate
 from models import classifier
 from utils.common import mkdir
 from data.dataloaders import AudioDataset
+from data.transforms import MelSpectogram, StdScaler
 
 
 def collate_fn(batch):
@@ -31,15 +33,21 @@ class Trainer:
         self.datasets = {}
         self.dataloaders = {}
 
+        transforms = Compose([MelSpectogram(args.sample_rate), StdScaler()])
         for s in sets:
-            self.datasets[s] = AudioDataset(os.path.join(args.data, s))
+            self.datasets[s] = AudioDataset(os.path.join(args.data, s),
+                                            sample_rate=args.sample_rate,
+                                            transforms=transforms)
             self.dataloaders[s] = DataLoader(
                 self.datasets[s], batch_size=args.batch_size, collate_fn=collate_fn)
 
         self.device = torch.device(args.device)
 
-        self.clf = classifier.AudioClassifier(
-            "MoT", 4096, 1024, self.datasets["train"].n_classes, self.device)
+        # self.clf = classifier.AudioClassifier(
+        #     "MoT", 4096, 1024, self.datasets["train"].n_classes, self.device)
+
+        self.clf = classifier.SpectralClassifier(
+             self.datasets["train"].n_classes, self.device)
 
         self.clf = self.clf.to(self.device)
         # TODO add resume code
@@ -72,6 +80,10 @@ class Trainer:
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
             x = [_.to(self.device) for _ in x]
             y = y.to(self.device)
+
+
+            if split == "train":
+                optimizer.zero_grad()
 
             with torch.set_grad_enabled(split == "train"):
                 output = self.clf(x)

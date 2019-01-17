@@ -111,3 +111,69 @@ class AudioClassifier(nn.Module):
             out = F.softmax(out, 1)
 
         return out
+
+class SpectralClassifier(nn.Module):
+    def __init__(self, n_classes, device):
+        super().__init__()
+        self.n_classes = n_classes
+        self.device = device
+        layers = OrderedDict()
+
+        layers["conv_1"] = nn.Conv2d(
+            1, 16, 7, stride=1)
+        layers["relu_1"] = nn.ReLU(inplace=True)
+        layers["batchnorm_1"] = nn.BatchNorm2d(16)
+        layers["pool_1"] = nn.MaxPool2d(3)
+
+        layers["conv_2"] = nn.Conv2d(
+            16, 32, 5, stride=1)
+        layers["relu_2"] = nn.ReLU(inplace=True)
+        layers["batchnorm_2"] = nn.BatchNorm2d(32)
+        layers["pool_2"] = nn.MaxPool2d(3)
+
+        layers["conv_3"] = nn.Conv2d(
+            32, 64, 3, stride=1)
+        layers["relu_3"] = nn.ReLU(inplace=True)
+        layers["batchnorm_3"] = nn.BatchNorm2d(64)
+        layers["pool_3"] = nn.MaxPool2d(3)
+
+        layers["conv_4"] = nn.Conv2d(
+            64, 128, 3, stride=1)
+        layers["relu_4"] = nn.ReLU(inplace=True)
+        layers["batchnorm_4"] = nn.BatchNorm2d(128)
+        layers["pool_4"] = nn.MaxPool2d(3)
+
+
+        self.layers = nn.Sequential(layers)
+
+        with torch.no_grad():
+            # test_input = torch.zeros(1, 1, 400, 430)
+            test_input = torch.zeros(1, 1, 128, 430)
+            out = self.layers(test_input)
+            print(out.size())
+            self.feature_size = np.prod(out.size())
+
+        print("Feature Size: {}".format(self.feature_size))
+
+        clf_layers = OrderedDict()
+        # clf_layers["dropout_0"] = nn.Dropout(0.3)
+        clf_layers["linear_1"] = nn.Linear(self.feature_size, 256)
+        clf_layers["relu_1"] = nn.ReLU(inplace=True)
+        # clf_layers["dropout_1"] = nn.Dropout(0.3)
+        clf_layers["linear_2"] = nn.Linear(256, self.n_classes)
+
+        self.classifier = nn.Sequential(clf_layers)
+
+        log.info("Created model : {}".format(self))
+
+    def forward(self, x):
+        x = torch.stack([_.unsqueeze(0) for _ in x])
+        # print(x.shape)
+        features = self.layers(x.float())
+        features = features.view(x.size(0), self.feature_size)
+        out = self.classifier(features)
+
+        # if not training, use a softmax
+        out = F.softmax(out, 1)
+        # print(out)
+        return out

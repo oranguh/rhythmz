@@ -7,6 +7,7 @@ import numpy as np
 from process import process
 from models import trainer
 from args_utils import get_argparser
+from data.stats import ComputeMean
 
 
 if __name__ == '__main__':
@@ -32,6 +33,9 @@ if __name__ == '__main__':
     if args.module == "process":
         data_process = process.Process(args)
         data_process.process()
+    elif args.module == "compute-mean":
+        mean_compute = ComputeMean(args)
+        mean_compute.compute()
     elif args.module == "train":
         trainer = trainer.Trainer(args)
         trainer.train()

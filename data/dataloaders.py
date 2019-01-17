@@ -2,19 +2,27 @@ import os
 import random
 import logging
 
+import torch
+import librosa
 import torchaudio
-from torchaudio.transforms import Scale, Compose
-from data.transforms import MelSpectogram
 import numpy as np
-
 from torch.utils.data import Dataset
+from torchaudio.transforms import Scale, Compose
+
+from data.transforms import MelSpectogram
+
+import matplotlib.pyplot as plt
+
+from python_speech_features import mfcc
 
 log = logging.getLogger(__name__)
 
 
 class AudioDataset(Dataset):
 
-    def __init__(self, root_dir, sample_rate=16000):
+    def __init__(self, root_dir, sample_rate=16000, transforms=None):
+        if transforms is None:
+            transforms = Scale()
         self.root_dir = root_dir
         self.class_to_idx = {}
         classes = set()
@@ -35,7 +43,7 @@ class AudioDataset(Dataset):
             cl, idx) in self.class_to_idx.items()}
         self.n_classes = len(self.class_to_idx)
         # TODO: explore more transforms
-        self.transforms = Scale()
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.data)
@@ -47,6 +55,8 @@ class AudioDataset(Dataset):
 
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
-        sound, sample_rate = torchaudio.load(aud_path)
-        sound = self.transforms(sound)
+        sound, sample_rate = librosa.load(aud_path)
+        if self.transforms:
+            sound = self.transforms(sound)
+        sound = torch.from_numpy(sound)
         return sound, self.one_hot(cl)

@@ -3,7 +3,7 @@ import argparse
 
 def add_train_args(parser):
     parser.add_argument("--batch-size", dest="batch_size",
-                        type=int, default=8, help="batch size for training")
+                        type=int, default=2, help="batch size for training")
     parser.add_argument("--epochs", type=int, default=1,
                         help="batch size for training")
     parser.add_argument("--results-path", dest="results_path", type=str,
@@ -12,6 +12,8 @@ def add_train_args(parser):
                         type=str, required=True, help="id of the experiment")
     parser.add_argument("--device", type=str, default="cpu",
                         help="device to train model on")
+    parser.add_argument("--sample-rate", required=True,
+                        help="sample rate of the audio", type=int, dest="sample_rate")
 
 
 def get_argparser():
@@ -46,4 +48,12 @@ def get_argparser():
     parser_train.add_argument("--data", dest="data",
                               type=str, required=True, help="location of input data")
     add_train_args(parser_train)
+
+    parser_stats = subparsers.add_parser("compute-mean", help="compute mean")
+    parser_stats.add_argument("--data", dest="data",
+                              type=str, required=True, help="location of input data")
+    parser_stats.add_argument("--sample-rate", required=True,
+                        help="sample rate of the audio", type=int, dest="sample_rate")
+    parser_stats.add_argument("--save-path", required=True,
+                        help="where to save stats", type=str, dest="save_path")
     return parser
