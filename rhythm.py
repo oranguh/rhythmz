@@ -27,7 +27,7 @@ if __name__ == '__main__':
     # seed for reproducability
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
-    if args.device != "cpu":
+    if hasattr(args, "device") and args.device != "cpu":
         torch.cuda.manual_seed_all(SEED)
 
     log.info("Arguments: {}".format(args))
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         data_process.process()
     elif args.module == "compute-mean":
         mean_compute = ComputeMean(args)
-        mean_compute.compute()
+        mean_compute.raw_audio()
     elif args.module == "train":
         trainer = trainer.Trainer(args)
         trainer.train()

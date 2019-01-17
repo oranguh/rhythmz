@@ -54,6 +54,5 @@ def get_argparser():
                               type=str, required=True, help="location of input data")
     parser_stats.add_argument("--sample-rate", required=True,
                         help="sample rate of the audio", type=int, dest="sample_rate")
-    parser_stats.add_argument("--save-path", required=True,
-                        help="where to save stats", type=str, dest="save_path")
+
     return parser

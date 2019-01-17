@@ -6,13 +6,12 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torch.nn.modules.loss import CrossEntropyLoss
-from torchaudio.transforms import Compose, Scale
 
 from models import evaluate
 from models import classifier
 from utils.common import mkdir
 from data.dataloaders import AudioDataset
-from data.transforms import MelSpectogram, StdScaler
+from data.transforms import MelSpectogram, StdScaler, Compose
 
 
 def collate_fn(batch):
@@ -34,7 +33,8 @@ class Trainer:
         self.dataloaders = {}
 
         #transforms = Compose([MelSpectogram(args.sample_rate), StdScaler()])
-        transforms = Scale()
+        transforms = StdScaler()
+        
         for s in sets:
             self.datasets[s] = AudioDataset(os.path.join(args.data, s),
                                             sample_rate=args.sample_rate,
@@ -57,7 +57,6 @@ class Trainer:
         self.results_path = args.results_path
         mkdir(self.results_path)
         self.model_id = args.model_id
-
 
         self.criterion = CrossEntropyLoss().to(self.device)
 
@@ -82,14 +81,14 @@ class Trainer:
             x = [_.to(self.device).float() for _ in x]
             y = y.to(self.device)
 
-
             if split == "train":
                 optimizer.zero_grad()
 
             with torch.set_grad_enabled(split == "train"):
                 output = self.clf(x)
                 loss = self.criterion(output, y.argmax(1))
-                cm.add_many(y.argmax(1).detach().cpu().numpy(), output.argmax(1).detach().cpu().numpy())
+                cm.add_many(y.argmax(1).detach().cpu().numpy(),
+                            output.argmax(1).detach().cpu().numpy())
 
                 correct += (y.argmax(1) == output.argmax(1)).sum().item()
                 total += len(x)
