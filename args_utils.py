@@ -2,6 +2,14 @@ import argparse
 
 
 def add_train_args(parser):
+    parser.add_argument("--features", type=str,
+                        choices=["mel-spectogram", "raw"],
+                        required=True,
+                        help="the features to use for training the network")
+    parser.add_argument("--combine", type=str,
+                        choices=["MoT"],
+                        required=True,
+                        help="the method to use for aggregating features learnt over time")
     parser.add_argument("--batch-size", dest="batch_size",
                         type=int, default=2, help="batch size for training")
     parser.add_argument("--epochs", type=int, default=1,
@@ -47,12 +55,14 @@ def get_argparser():
     parser_train = subparsers.add_parser("train", help="train the model")
     parser_train.add_argument("--data", dest="data",
                               type=str, required=True, help="location of input data")
+    parser_train.add_argument(
+        "--test", action="store_true", help="flag to test the model")
     add_train_args(parser_train)
 
     parser_stats = subparsers.add_parser("compute-mean", help="compute mean")
     parser_stats.add_argument("--data", dest="data",
                               type=str, required=True, help="location of input data")
     parser_stats.add_argument("--sample-rate", required=True,
-                        help="sample rate of the audio", type=int, dest="sample_rate")
+                              help="sample rate of the audio", type=int, dest="sample_rate")
 
     return parser

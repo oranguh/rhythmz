@@ -32,9 +32,13 @@ class Trainer:
         self.datasets = {}
         self.dataloaders = {}
 
-        #transforms = Compose([MelSpectogram(args.sample_rate), StdScaler()])
-        transforms = StdScaler()
-        
+        if args.features == "raw":
+            transforms = StdScaler(
+                mean=-8.768773113843054e-06, std=0.01660512387752533)
+        elif args.features == "mel-spectogram":
+            transforms = Compose([MelSpectogram(args.sample_rate), StdScaler(
+                5.592183756080553, std=55.7225389415)])
+
         for s in sets:
             self.datasets[s] = AudioDataset(os.path.join(args.data, s),
                                             sample_rate=args.sample_rate,
@@ -44,14 +48,14 @@ class Trainer:
 
         self.device = torch.device(args.device)
 
-        self.clf = classifier.AudioClassifier(
-            "MoT", 4096, 1024, self.datasets["train"].n_classes, self.device)
-
-        # self.clf = classifier.SpectralClassifier(
-        #      self.datasets["train"].n_classes, self.device)
+        if args.features == "raw":
+            self.clf = classifier.AudioClassifier(
+                args.combine, 4096, 1024, self.datasets["train"].n_classes, self.device)
+        elif args.features == "mel-spectogram":
+            self.clf = classifier.SpectralClassifier(args.combine,
+                                                     self.datasets["train"].n_classes, self.device)
 
         self.clf = self.clf.to(self.device)
-        # TODO add resume code
 
         self.n_epochs = args.epochs
         self.results_path = args.results_path
@@ -144,12 +148,14 @@ class Trainer:
             if best_val_score < val_score:
                 log.info("Validation Score {} exceeds best score of {}. Saving new best model".format(
                     val_score, best_val_score))
+                best_val_score = val_score
                 best_model = self.clf.state_dict()
                 torch.save(best_model, os.path.join(
                     model_path, "best_model.pkl"))
 
     def load(self):
-        pass
+        model_path = os.path.join(self.results_path, self.model_id)
+        self.clf.load_state_dict(torch.load(model_path))
 
     def test():
         self.clf = self.clf.to(self.device)

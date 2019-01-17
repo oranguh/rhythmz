@@ -28,10 +28,9 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     if hasattr(args, "device") and args.device != "cpu":
-        torch.cuda.manual_seed_all(SEED)
+        torch.cuda.manual_seed_all(args.seed)
 
     log.info("Arguments: {}".format(args))
-
     if args.module == "process":
         data_process = process.Process(args)
         data_process.process()
@@ -40,6 +39,10 @@ if __name__ == '__main__':
         mean_compute.raw_audio()
     elif args.module == "train":
         trainer = trainer.Trainer(args)
-        trainer.train()
+        if args.test:
+            trainer.load()
+            trainer.test()
+        else:
+            trainer.train()
     else:
         raise ValueError("Unknown module: {}".format(args.module))

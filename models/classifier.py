@@ -75,7 +75,8 @@ class AudioClassifier(nn.Module):
         while start < in_size:
             split = x[start: (start+self.input_size)]
             if split.size(0) < self.input_size:
-                zero_pad = torch.zeros(self.input_size - split.size(0)).to(self.device)
+                zero_pad = torch.zeros(
+                    self.input_size - split.size(0)).to(self.device)
                 split = torch.cat((split, zero_pad))
 
             stacked.append(split)
@@ -114,8 +115,9 @@ class AudioClassifier(nn.Module):
 
         return out
 
+
 class SpectralClassifier(nn.Module):
-    def __init__(self, n_classes, device):
+    def __init__(self, combine, n_classes, device):
         super().__init__()
         self.n_classes = n_classes
         self.device = device
@@ -145,11 +147,9 @@ class SpectralClassifier(nn.Module):
         layers["batchnorm_4"] = nn.BatchNorm2d(128)
         layers["pool_4"] = nn.MaxPool2d(3)
 
-
         self.layers = nn.Sequential(layers)
 
         with torch.no_grad():
-            # test_input = torch.zeros(1, 1, 400, 430)
             test_input = torch.zeros(1, 1, 128, 430)
             out = self.layers(test_input)
             print(out.size())
@@ -158,10 +158,10 @@ class SpectralClassifier(nn.Module):
         print("Feature Size: {}".format(self.feature_size))
 
         clf_layers = OrderedDict()
-        # clf_layers["dropout_0"] = nn.Dropout(0.3)
+        clf_layers["dropout_0"] = nn.Dropout(0.3)
         clf_layers["linear_1"] = nn.Linear(self.feature_size, 256)
         clf_layers["relu_1"] = nn.ReLU(inplace=True)
-        # clf_layers["dropout_1"] = nn.Dropout(0.3)
+        clf_layers["dropout_1"] = nn.Dropout(0.3)
         clf_layers["linear_2"] = nn.Linear(256, self.n_classes)
 
         self.classifier = nn.Sequential(clf_layers)
@@ -170,7 +170,6 @@ class SpectralClassifier(nn.Module):
 
     def forward(self, x):
         x = torch.stack([_.unsqueeze(0) for _ in x])
-        # print(x.shape)
         features = self.layers(x.float())
         features = features.view(x.size(0), self.feature_size)
         out = self.classifier(features)
