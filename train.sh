@@ -3,7 +3,7 @@ BATCH_SIZE=16
 SAMPLE_RATE=8000
 DATA_RAW=new_dataset
 DATA_PROCESSED=new_dataset_processed
-DEVICE=cpu
+DEVICE=cuda
 
 
 _CMD="python rhythm.py train --sample-rate $SAMPLE_RATE  --batch-size $BATCH_SIZE --epochs $EPOCHS --device $DEVICE"
