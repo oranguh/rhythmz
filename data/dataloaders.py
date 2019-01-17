@@ -4,7 +4,6 @@ import logging
 
 import torch
 import librosa
-import torchaudio
 import numpy as np
 from torch.utils.data import Dataset
 
