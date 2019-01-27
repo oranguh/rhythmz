@@ -150,7 +150,8 @@ class SpectralClassifier(nn.Module):
         self.layers = nn.Sequential(layers)
 
         with torch.no_grad():
-            test_input = torch.zeros(1, 1, 128, 430)
+            # test_input = torch.zeros(1, 1, 128, 430)
+            test_input = torch.zeros(1, 1, 128, 862)
             out = self.layers(test_input)
             print(out.size())
             self.feature_size = np.prod(out.size())

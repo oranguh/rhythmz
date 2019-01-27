@@ -15,7 +15,8 @@ def mkdir(path):
 
 
 def read_files(folder):
-    return [file_name.split("/")[-1] for file_name in list_dir(folder)]
+    # return [file_name.split("/")[-1] for file_name in list_dir(folder)]
+    return [os.path.split(file_name)[-1] for file_name in list_dir(folder)]
 
 
 def write_split(path, data):
@@ -24,7 +25,8 @@ def write_split(path, data):
         mkdir(os.path.join(path, cl))
 
     for d in data:
-        file_name = d[1].split("/")[-1]
+        # file_name = d[1].split("/")[-1]
+        file_name = os.path.split(d[1])[-1]
         dest = os.path.join(path, d[0], file_name)
         log.info("Src: {}, Dest: {}".format(d[1], dest))
         shutil.copy(d[1], dest)

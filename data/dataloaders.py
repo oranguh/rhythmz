@@ -49,8 +49,10 @@ class AudioDataset(Dataset):
 
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
-        sound, sample_rate = librosa.load(aud_path)
+        # sound, sample_rate = librosa.load(aud_path)
         if self.transforms:
-            sound = self.transforms(sound)
+            # sound = self.transforms(sound)
+            sound = np.load(aud_path)
+            # print(sound.shape)
         sound = torch.from_numpy(sound)
         return sound, self.one_hot(cl)
