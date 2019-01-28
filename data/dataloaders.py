@@ -36,7 +36,6 @@ class AudioDataset(Dataset):
         self.idx_to_class = {idx: cl for (
             cl, idx) in self.class_to_idx.items()}
         self.n_classes = len(self.class_to_idx)
-        # TODO: explore more transforms
         self.transforms = transforms
 
     def __len__(self):
@@ -49,10 +48,9 @@ class AudioDataset(Dataset):
 
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
-        # sound, sample_rate = librosa.load(aud_path)
+        sound, sample_rate = librosa.load(aud_path)
         if self.transforms:
-            # sound = self.transforms(sound)
-            sound = np.load(aud_path)
-            # print(sound.shape)
+            sound = self.transforms(sound)
+            # sound = np.load(aud_path)
         sound = torch.from_numpy(sound)
         return sound, self.one_hot(cl)

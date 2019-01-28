@@ -7,7 +7,7 @@ def add_train_args(parser):
                         required=True,
                         help="the features to use for training the network")
     parser.add_argument("--combine", type=str,
-                        choices=["MoT"],
+                        choices=["MoT", "LSTM"],
                         required=True,
                         help="the method to use for aggregating features learnt over time")
     parser.add_argument("--batch-size", dest="batch_size",

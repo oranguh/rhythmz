@@ -54,6 +54,13 @@ class AudioClassifier(nn.Module):
 
         log.info("Feature Size: {}".format(self.feature_size))
 
+        if self.combine == "LSTM":
+            # initialize the LSTM
+            self.lstm_hidden_size = self.feature_size
+            self.lstm_num_layers = 1
+            self.lstm = nn.LSTM(input_size=self.feature_size,
+                                hidden_size=self.feature_size, num_layers=self.lstm_num_layers)
+
         clf_layers = OrderedDict()
         clf_layers["dropout_0"] = nn.Dropout(0.1)
         clf_layers["linear_1"] = nn.Linear(self.feature_size, 256)
@@ -84,17 +91,22 @@ class AudioClassifier(nn.Module):
 
         return torch.stack(stacked)
 
+    def _init_hidden(self):
+        return (torch.randn(self.lstm_num_layers, 1, self.lstm_hidden_size).to(self.device),
+                torch.randn(self.lstm_num_layers, 1, self.lstm_hidden_size).to(self.device))
+
     def combine_stride_features(self, features):
         if self.combine == "MoT":
             feats, _ = features.max(0)
             return feats
         elif self.combine == "LSTM":
-            pass
+            hidden = self._init_hidden()
+            N = features.size(0)
+            lstm_out, hidden = self.lstm(features.view(N, 1, -1), hidden)
+            return lstm_out[-1]
         raise ValueError("Unavailable method '{}'".format(self.combine))
 
     def forward(self, x):
-        # x is [number of input datapoints, size of datapoint]
-        # assert len(x.size()) == 2
 
         out = torch.zeros(len(x), self.n_classes).to(self.device)
         # transform each to [batch, input_size] per datapoint
