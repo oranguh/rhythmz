@@ -43,12 +43,15 @@ if __name__ == '__main__':
                         help="location of input folder")
     parser.add_argument("output_folder", type=str,
                         help="location of output folder")
+    parser.add_argument("--seed", type=int, help="seed for RNG", required=True)
     parser.add_argument("--train-split", dest="train_split", default=0.6,
                         type=float, help="(0, 1.0) %age of train split")
     parser.add_argument("--val-split", dest="val_split", default=0.2,
                         type=float, help="(0, 1.0) %age of val split")
 
     args = parser.parse_args()
+
+    np.random.seed(args.seed)
 
     train_split = args.train_split
     val_split = args.val_split
@@ -65,7 +68,8 @@ if __name__ == '__main__':
     all_files = []
     for class_name in os.listdir(args.input_folder):
         class_path = os.path.join(args.input_folder, class_name)
-        class_files = [os.path.join(class_path, _) for _ in os.listdir(class_path)]
+        class_files = [os.path.join(class_path, _)
+                       for _ in os.listdir(class_path)]
         log.info("Class: {}. Instances found: {}".format(
             class_name, len(class_files)))
         all_files.extend([(class_name, cf) for cf in class_files])

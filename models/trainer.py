@@ -34,10 +34,10 @@ class Trainer:
 
         if args.features == "raw":
             transforms = StdScaler(
-                mean=-8.768773113843054e-06, std=0.01660512387752533)
+                mean=args.data_mean, std=args.data_std)
         elif args.features == "mel-spectogram":
             transforms = Compose([MelSpectogram(args.sample_rate), StdScaler(
-                5.592183756080553, std=55.7225389415)])
+                mean=args.data_mean, std=args.data_std)])
 
         for s in sets:
             self.datasets[s] = AudioDataset(os.path.join(args.data, s),

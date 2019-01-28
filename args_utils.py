@@ -22,6 +22,10 @@ def add_train_args(parser):
                         help="device to train model on")
     parser.add_argument("--sample-rate", required=True,
                         help="sample rate of the audio", type=int, dest="sample_rate")
+    parser.add_argument("--data-mean", type=float, dest="data_mean",
+                        help="data mean. used to standardize the data", required=True)
+    parser.add_argument("--data-std", type=float, dest="data_std",
+                        help="data std. used to standardize the data", required=True)
 
 
 def get_argparser():
