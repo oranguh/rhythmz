@@ -10,14 +10,22 @@ from tqdm import tqdm
 import matplotlib.image as mpimg
 import eyed3
 
+def main():
 
-data_path = "D:/daata/top_coder_challenge/"
-csv_path = data_path + "testingData.csv"
-chrsitan_data = "testingdata/"
-# csv_path = "trainingData.csv"
+    # root_dir = "/media/meow/72A23121A230EAED/librivox/Multilingual"
+    # save_dir = "/media/meow/72A23121A230EAED/librivox_Processed"
+    #
+    # process_librivox_data(root_dir, save_dir)
+
+    rootDir = "/media/meow/72A23121A230EAED/daata/new_dataset"
+    process_audio_data(rootDir)
 
 
-if False:
+def top_coder_extractor():
+    data_path = "D:/daata/top_coder_challenge/"
+    csv_path = data_path + "testingData.csv"
+    chrsitan_data = "testingdata/"
+    csv_path = "trainingData.csv"
     counter_dict = OrderedDict()
     counter = 0
     with open(csv_path, newline='') as csvfile:
@@ -29,9 +37,6 @@ if False:
                 counter_dict[row[1]] += 1
             except KeyError:
                 counter_dict[row[1]] = 1
-
-
-
             #
             # save_name = data_path + "Data_organized_test"+ "\\" + row[1] + "\\" + row[1] + "_" + str(counter_dict[row[1]]) + ".wav"
             # sound.export(save_name, format="wav")
@@ -45,10 +50,6 @@ if False:
             pass
     print(counter_dict)
 
-
-rootDir = "/media/meow/72A23121A230EAED/daata/new_dataset"
-save_dir = "/media/meow/72A23121A230EAED/daata/new_dataset_melspec_2"
-
 class MelSpectogram:
     def __init__(self, sample_rate, n_mels=128, n_fft=2048, hop_length=512, power=2.0):
         self.sample_rate = sample_rate
@@ -60,27 +61,42 @@ class MelSpectogram:
     def __call__(self, audio):
         return librosa.power_to_db(librosa.feature.melspectrogram(audio, sr=self.sample_rate, n_mels=self.n_mels,
                                                                   n_fft=self.n_fft, hop_length=self.hop_length), ref=np.max)
-if False:
+
+def process_audio_data(rootDir):
     for dirName, subdirList, fileList in tqdm(os.walk(rootDir)):
-        try:
-            pass
-            folder_name = dirName.replace("new_dataset", "new_dataset_melspec_numpy_2")
-            os.mkdir(folder_name);
-        except FileExistsError:
-            pass
+
+        # making new head directories for processed data
+        save_dir_wav = rootDir + "_wav"
+        save_dir_melspec = + "_melspec"
+        if not os.path.isdir(save_dir_wav):
+            os.mkdir(save_dir_wav)
+        if not os.path.isdir(save_dir_melspec):
+            os.mkdir(save_dir_melspec)
+
+        # make copy of each sub directory
+        new_directory_wav = dirName.replace(os.path.split(rootDir)[1], os.path.split(save_dir_wav)[1])
+        new_directory_melspec = dirName.replace(os.path.split(rootDir)[1], os.path.split(save_dir_melspec)[1])
+
+        if not os.path.isdir(new_directory_wav):
+            os.mkdir(new_directory_wav)
+        if not os.path.isdir(new_directory_melspec):
+            os.mkdir(new_directory_melspec)
 
         for fname in tqdm(fileList):
 
-            # print('filename {}'.format(dirName + "\\" + fname))
-            image_name = fname.strip( '.wav' )
+            # print('filename {}'.format(new_directory + "\\" + fname))
+            image_name = os.path.splitext(fname)[0]
+            y, sr = librosa.load(os.path.join(dirName, fname))
 
-            if True:
-                y, sr = librosa.load(dirName + "/" + fname)
-                S = MelSpectogram(sr)
-                np.save(folder_name + "/" + image_name, S(y))
+            # downsampled wav
+            y_8k = librosa.resample(y, sr, 8000)
+            save_path = os.path.join(new_directory_wav, image_name)
+            librosa.output.write_wav(save_path + "_8K", y_8k, sr, norm=False)
 
-root_dir = "/media/meow/72A23121A230EAED/librivox/Multilingual"
-save_dir = "/media/meow/72A23121A230EAED/librivox_Processed"
+            # numpy matrix
+            save_path = os.path.join(new_directory_melspec, image_name)
+            S = MelSpectogram(sr)
+            np.save(os.path.join(new_directory_melspec, image_name + S(y)))
 
 # root_dir = root_dir + "/mshortworks_001_1202_librivox"
 
@@ -152,7 +168,7 @@ def process_librivox_data(root_dir, save_dir):
             # except FileExistsError:
             #     pass
 
-            y, sr = librosa.load(dirName + "/" + fname)
+            y, sr = librosa.load(os.path.join(dirName, fname))
             S = MelSpectogram(sr)
 
             check_if_exists = os.path.join(save_dir, "numpy_melspec", audiofile_language, audiofile_language + "_" + str(language_counter_dict[audiofile_language]) + "_0.npy")
@@ -169,4 +185,5 @@ def process_librivox_data(root_dir, save_dir):
     print(language_counter_dict)
 
 
-process_librivox_data(root_dir, save_dir)
+if __name__ == "__main__":
+    main()
