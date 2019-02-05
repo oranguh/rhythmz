@@ -28,16 +28,21 @@ def get_dataset(path, features, sample_rate, mean, std):
                 mean=mean, std=args.data_std)
         else:
             transforms = None
+        # no need to cache if we're using raw audio
+        cache = False
     elif features == "mel-spectogram":
         if mean and std:
             transforms = Compose([MelSpectogram(sample_rate), StdScaler(
                 mean=mean, std=std)])
         else:
             transforms = MelSpectogram(sample_rate)
+        # cache if we're using raw audio
+        cache = True
 
     return AudioDataset(path,
                         sample_rate=sample_rate,
-                        transforms=transforms)
+                        transforms=transforms,
+                        cache=cache)
 
 
 log = logging.getLogger(__name__)

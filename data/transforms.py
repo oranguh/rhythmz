@@ -14,11 +14,19 @@ class MelSpectogram:
         return librosa.power_to_db(librosa.feature.melspectrogram(audio, sr=self.sample_rate, n_mels=self.n_mels,
                                                                   n_fft=self.n_fft, hop_length=self.hop_length), ref=np.max)
 
+    def __str__(self):
+        return "MelSpectogram(n_mels={}, n_fft={}, hop_length={}, power={})".format(self.n_mels,
+                                                                                    self.n_fft,
+                                                                                    self.hop_length, self.power)
+
 
 class StdScaler:
-    def __init__(self, mean=-8.768773113843054e-06, std=0.01660512387752533):
+    def __init__(self, mean, std):
         self.mean = mean
         self.std = std
+
+    def __str__(self):
+        return "StdScaler(mean={}, std={})".format(self.mean, self.std)
 
     def __call__(self, spectogram):
         return (spectogram - self.mean) / self.std

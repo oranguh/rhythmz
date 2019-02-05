@@ -1,6 +1,7 @@
 import os
 import random
 import logging
+import hashlib
 
 import torch
 import librosa
@@ -8,16 +9,21 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from data.transforms import MelSpectogram
-
-import matplotlib.pyplot as plt
+from utils import common
 
 log = logging.getLogger(__name__)
 
 
 class AudioDataset(Dataset):
 
-    def __init__(self, root_dir, sample_rate=16000, transforms=None):
+    def __init__(self, root_dir, sample_rate=16000, transforms=None, cache=False, cache_dir="./cache"):
         self.root_dir = root_dir
+        self.cache = cache
+        self.cache_dir = cache_dir
+        if self.cache:
+            self.transforms_str = str(transforms)
+            log.info("Caching is enabled! Cache dir is : {}".format(self.cache_dir))
+            common.mkdir(self.cache_dir)
         self.class_to_idx = {}
         classes = set()
         data_points = []
@@ -46,11 +52,29 @@ class AudioDataset(Dataset):
         c[self.class_to_idx[cl]] = 1
         return c
 
-    def __getitem__(self, idx):
-        cl, aud_path = self.data[idx]
+    def _load(self, idx):
+        _, aud_path = self.data[idx]
         sound, sample_rate = librosa.load(aud_path)
         if self.transforms:
             sound = self.transforms(sound)
-            # sound = np.load(aud_path)
         sound = torch.from_numpy(sound)
-        return sound, self.one_hot(cl)
+
+        return sound
+
+    def __getitem__(self, idx):
+        cl, aud_path = self.data[idx]
+
+        if self.cache:
+            _id = hashlib.sha1(
+                (self.transforms_str + aud_path).encode()).hexdigest()
+            cache_path = os.path.join(self.cache_dir, _id)
+
+            if os.path.exists(cache_path):
+                sound = np.load(cache_path)
+            else:
+                sound = self._load(idx)
+                np.save(cache_path, sound)
+
+            return sound, self.one_hot(cl)
+        else:
+            return self._load(idx), self.one_hot(cl)
