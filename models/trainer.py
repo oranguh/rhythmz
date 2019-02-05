@@ -48,12 +48,9 @@ class Trainer:
 
         self.device = torch.device(args.device)
 
-        if args.features == "raw":
-            self.clf = classifier.AudioClassifier(
-                args.combine, 4096, 1024, self.datasets["train"].n_classes, self.device)
-        elif args.features == "mel-spectogram":
-            self.clf = classifier.SpectralClassifier(args.combine,
-                                                     self.datasets["train"].n_classes, self.device)
+        self.clf = classifier.AudioClassifier(
+            args.combine, args.features, args.input_size,
+            args.input_stride, self.datasets["train"].n_classes, self.device)
 
         self.clf = self.clf.to(self.device)
 

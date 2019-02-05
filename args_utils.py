@@ -27,6 +27,11 @@ def add_train_args(parser):
     parser.add_argument("--data-std", type=float, dest="data_std",
                         help="data std. used to standardize the data", required=True)
 
+    parser.add_argument("--input-size", type=int, dest="input_size",
+                        help="size of the sliding window", required=True)
+    parser.add_argument("--input-stride", type=int, dest="input_stride",
+                        help="size of the hop / stride (time dimension)", required=True)
+
 
 def get_argparser():
     parser = argparse.ArgumentParser(description='TODO')
