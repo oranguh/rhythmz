@@ -86,12 +86,12 @@ class AudioClassifier(nn.Module):
         self.layers = nn.Sequential(layers)
         with torch.no_grad():
             if self.features == "raw":
-                test_input = torch.zeros(1, 1, self.input_size).to(self.device)
+                test_input = torch.zeros(1, 1, self.input_size)
             elif self.features == "mel-spectogram":
                 test_input = torch.zeros(
-                    1, 1, 128, self.input_size).to(self.device)
+                    1, 1, 128, self.input_size)
             out = self.layers(test_input)
-            self.feature_size = np.prod(out.size())
+            self.feature_size = int(np.prod(out.size()))
 
         log.info("Feature Size: {}".format(self.feature_size))
 
