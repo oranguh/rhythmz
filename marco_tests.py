@@ -8,7 +8,7 @@ import numpy as np
 import pylab
 from tqdm import tqdm
 import matplotlib.image as mpimg
-import eyed3
+# import eyed3
 
 def main():
 
@@ -18,6 +18,7 @@ def main():
     # process_librivox_data(root_dir, save_dir)
 
     rootDir = "/media/meow/72A23121A230EAED/daata/new_dataset"
+    rootDir = "D:\\daata\\indic_splits"
     process_audio_data(rootDir)
 
 
@@ -62,12 +63,20 @@ class MelSpectogram:
         return librosa.power_to_db(librosa.feature.melspectrogram(audio, sr=self.sample_rate, n_mels=self.n_mels,
                                                                   n_fft=self.n_fft, hop_length=self.hop_length), ref=np.max)
 
-def process_audio_data(rootDir):
+def process_audio_data(rootDir, savedir = None):
+    """
+    input any folder. It will make an identical copy containing wav files of desired sampling rate (8000) and numpy arrays
+    """
     for dirName, subdirList, fileList in tqdm(os.walk(rootDir)):
 
         # making new head directories for processed data
-        save_dir_wav = rootDir + "_wav"
-        save_dir_melspec = + "_melspec"
+        if savedir == None:
+            save_dir_wav = rootDir + "_wav"
+            save_dir_melspec = rootDir + "_melspec"
+        else:
+            new_directory_wav = savedir + "_wav"
+            new_directory_melspec = savedir + "_melspec"
+
         if not os.path.isdir(save_dir_wav):
             os.mkdir(save_dir_wav)
         if not os.path.isdir(save_dir_melspec):
@@ -86,17 +95,18 @@ def process_audio_data(rootDir):
 
             # print('filename {}'.format(new_directory + "\\" + fname))
             image_name = os.path.splitext(fname)[0]
-            y, sr = librosa.load(os.path.join(dirName, fname))
+            y, sr = librosa.load(os.path.join(dirName, fname),sr=None)
 
-            # downsampled wav
-            y_8k = librosa.resample(y, sr, 8000)
+            # resampled wav
             save_path = os.path.join(new_directory_wav, image_name)
-            librosa.output.write_wav(save_path + "_8K", y_8k, sr, norm=False)
+            new_sr = 8000
+            y_8k = librosa.resample(y, sr, new_sr)
+            librosa.output.write_wav(save_path + "_8K.wav", y_8k, new_sr, norm=False)
 
             # numpy matrix
             save_path = os.path.join(new_directory_melspec, image_name)
             S = MelSpectogram(sr)
-            np.save(os.path.join(new_directory_melspec, image_name + S(y)))
+            np.save(os.path.join(new_directory_melspec, image_name), S(y))
 
 # root_dir = root_dir + "/mshortworks_001_1202_librivox"
 
