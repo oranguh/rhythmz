@@ -36,7 +36,7 @@ if __name__ == '__main__':
         data_process.process()
     elif args.module == "compute-mean":
         mean_compute = ComputeMean(args)
-        mean_compute.raw_audio()
+        mean_compute.compute()
     elif args.module == "train":
         trainer = trainer.Trainer(args)
         if args.test:

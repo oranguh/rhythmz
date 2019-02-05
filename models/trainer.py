@@ -21,6 +21,25 @@ def collate_fn(batch):
     return [data, target]
 
 
+def get_dataset(path, features, sample_rate, mean, std):
+    if features == "raw":
+        if mean and std:
+            transforms = StdScaler(
+                mean=mean, std=args.data_std)
+        else:
+            transforms = None
+    elif features == "mel-spectogram":
+        if mean and std:
+            transforms = Compose([MelSpectogram(sample_rate), StdScaler(
+                mean=mean, std=std)])
+        else:
+            transforms = None
+
+    return AudioDataset(path,
+                        sample_rate=sample_rate,
+                        transforms=transforms)
+
+
 log = logging.getLogger(__name__)
 
 
@@ -40,9 +59,8 @@ class Trainer:
                 mean=args.data_mean, std=args.data_std)])
 
         for s in sets:
-            self.datasets[s] = AudioDataset(os.path.join(args.data, s),
-                                            sample_rate=args.sample_rate,
-                                            transforms=transforms)
+            self.datasets[s] = get_dataset(os.path.join(
+                args.data, s), args.features, args.sample_rate, args.data_mean, args.data_std)
             self.dataloaders[s] = DataLoader(
                 self.datasets[s], batch_size=args.batch_size, collate_fn=collate_fn)
 

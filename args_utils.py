@@ -73,5 +73,9 @@ def get_argparser():
                               type=str, required=True, help="location of input data")
     parser_stats.add_argument("--sample-rate", required=True,
                               help="sample rate of the audio", type=int, dest="sample_rate")
+    parser_stats.add_argument("--features", type=str,
+                              choices=["mel-spectogram", "raw"],
+                              required=True,
+                              help="the features to use for training the network")
 
     return parser

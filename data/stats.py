@@ -3,6 +3,7 @@ import logging
 
 from data.dataloaders import AudioDataset
 from data.transforms import MelSpectogram
+from models.trainer import get_dataset
 
 log = logging.getLogger(__name__)
 
@@ -10,12 +11,12 @@ log = logging.getLogger(__name__)
 class ComputeMean:
     def __init__(self, args):
         self.data = args.data
+        self.features = args.features
         self.sample_rate = args.sample_rate
 
-    def raw_audio(self):
-        data = AudioDataset(os.path.join(self.data, "train"),
-                            sample_rate=self.sample_rate,
-                            transforms=None)
+    def compute(self):
+        data = get_dataset(os.path.join(self.data, "train"),
+                           self.features, self.sample_rate, None, None)
 
         mean = 0.0
         n = 0
@@ -23,7 +24,7 @@ class ComputeMean:
         for idx in range(len(data)):
             if (idx + 1) % 100 == 0:
                 log.info("Computing Mean: {}% done : {}".format(
-                    (idx / len(data) * 100), mean / n))
+                    round(idx / len(data) * 100), mean / n))
             aud, cl = data[idx]
             mean += aud.view(-1).sum()
             n += aud.size(0)
@@ -38,7 +39,7 @@ class ComputeMean:
         for idx in range(len(data)):
             if (idx + 1) % 100 == 0:
                 log.info("Computing Std: {}% done : {}".format(
-                    (idx / len(data) * 100), std / n))
+                    round(idx / len(data) * 100), std / n))
             aud, cl = data[idx]
             std += ((mean - aud.view(-1)) ** 2).sum()
             n += aud.size(0)

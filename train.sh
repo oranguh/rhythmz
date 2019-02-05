@@ -1,12 +1,12 @@
 #!/bin/bash
-EPOCHS=1
-BATCH_SIZE=1
-SAMPLE_RATE=16000
-DATA_RAW=indic_splits
-DATA_PROCESSED=indic_rhythm_splits
-DATA_SUFFIX=_indic
-DEVICE=cpu
-RUN=0
+EPOCHS=1 # number of epochs to run
+BATCH_SIZE=1 # batch size to use
+SAMPLE_RATE=16000 # sample rate of the audio 
+DATA_RAW=indic_splits # the unprocessed audio 
+DATA_PROCESSED=indic_rhythm_splits # 'rhythm' data
+DATA_SUFFIX=_indic # a suffix so results are stored separately
+DEVICE=cpu # device to run things on 
+RUN=0 # set to 0 to test the script without actually running anything
 
 # stats: unprocessed, raw
 UNP_RAW_MEAN=URM
