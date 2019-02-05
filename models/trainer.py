@@ -33,7 +33,7 @@ def get_dataset(path, features, sample_rate, mean, std):
             transforms = Compose([MelSpectogram(sample_rate), StdScaler(
                 mean=mean, std=std)])
         else:
-            transforms = None
+            transforms = MelSpectogram(sample_rate)
 
     return AudioDataset(path,
                         sample_rate=sample_rate,
