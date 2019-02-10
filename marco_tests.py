@@ -19,6 +19,7 @@ def main():
 
     rootDir = "/media/meow/72A23121A230EAED/daata/new_dataset"
     rootDir = "D:\\daata\\indic_splits"
+    rootDir = "D:\\daata\\top_coder_challenge\\Selected Data Train"
     process_audio_data(rootDir)
 
 
@@ -63,33 +64,41 @@ class MelSpectogram:
         return librosa.power_to_db(librosa.feature.melspectrogram(audio, sr=self.sample_rate, n_mels=self.n_mels,
                                                                   n_fft=self.n_fft, hop_length=self.hop_length), ref=np.max)
 
-def process_audio_data(rootDir, savedir = None):
+def process_audio_data(rootDir, savedir = None, MelFlag = False):
     """
     input any folder. It will make an identical copy containing wav files of desired sampling rate (8000) and numpy arrays
     """
+
+
     for dirName, subdirList, fileList in tqdm(os.walk(rootDir)):
 
         # making new head directories for processed data
         if savedir == None:
             save_dir_wav = rootDir + "_wav"
-            save_dir_melspec = rootDir + "_melspec"
+            if MelFlag:
+                save_dir_melspec = rootDir + "_melspec"
         else:
             new_directory_wav = savedir + "_wav"
-            new_directory_melspec = savedir + "_melspec"
+            if MelFlag:
+                new_directory_melspec = savedir + "_melspec"
 
         if not os.path.isdir(save_dir_wav):
             os.mkdir(save_dir_wav)
-        if not os.path.isdir(save_dir_melspec):
-            os.mkdir(save_dir_melspec)
+        if MelFlag:
+            if not os.path.isdir(save_dir_melspec):
+                os.mkdir(save_dir_melspec)
 
         # make copy of each sub directory
         new_directory_wav = dirName.replace(os.path.split(rootDir)[1], os.path.split(save_dir_wav)[1])
-        new_directory_melspec = dirName.replace(os.path.split(rootDir)[1], os.path.split(save_dir_melspec)[1])
+
+        if MelFlag:
+            new_directory_melspec = dirName.replace(os.path.split(rootDir)[1], os.path.split(save_dir_melspec)[1])
 
         if not os.path.isdir(new_directory_wav):
             os.mkdir(new_directory_wav)
-        if not os.path.isdir(new_directory_melspec):
-            os.mkdir(new_directory_melspec)
+        if MelFlag:
+            if not os.path.isdir(new_directory_melspec):
+                os.mkdir(new_directory_melspec)
 
         for fname in tqdm(fileList):
 
@@ -99,14 +108,15 @@ def process_audio_data(rootDir, savedir = None):
 
             # resampled wav
             save_path = os.path.join(new_directory_wav, image_name)
-            new_sr = 8000
-            y_8k = librosa.resample(y, sr, new_sr)
-            librosa.output.write_wav(save_path + "_8K.wav", y_8k, new_sr, norm=False)
+            new_sr = 16000
+            y_new_sr = librosa.resample(y, sr, new_sr)
+            librosa.output.write_wav(save_path + "_" + str(new_sr) + ".wav", y_new_sr, new_sr, norm=False)
 
             # numpy matrix
-            save_path = os.path.join(new_directory_melspec, image_name)
-            S = MelSpectogram(sr)
-            np.save(os.path.join(new_directory_melspec, image_name), S(y))
+            if MelFlag:
+                save_path = os.path.join(new_directory_melspec, image_name)
+                S = MelSpectogram(sr)
+                np.save(os.path.join(new_directory_melspec, image_name), S(y))
 
 # root_dir = root_dir + "/mshortworks_001_1202_librivox"
 
