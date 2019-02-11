@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import numpy as np
 
 import torch
 from torch.optim import Adam
@@ -141,7 +142,7 @@ class Trainer:
         log.info("Epoch {} complete in {} seconds. Loss: {}".format(
             epoch, metrics["time"], metrics["epoch_loss"]))
 
-        return metrics
+        return metrics, cm.mat
 
     def train(self):
 
@@ -149,6 +150,8 @@ class Trainer:
         mkdir(model_path)
         epochs_path = os.path.join(model_path, "epochs")
         mkdir(epochs_path)
+        cm_path = os.path.join(model_path, "confusion_matrix")
+        mkdir(cm_path)
 
         optimizer = Adam(self.clf.parameters())
 
@@ -156,13 +159,17 @@ class Trainer:
         best_model = self.clf.state_dict()
 
         for epoch in range(self.n_epochs):
-            train_metrics = self.train_epoch(epoch, optimizer, "train")
-            val_metrics = self.train_epoch(epoch, None, "val")
+            train_metrics, cm_train = self.train_epoch(epoch, optimizer, "train")
+            val_metrics, cm_val = self.train_epoch(epoch, None, "val")
 
             torch.save(val_metrics, os.path.join(
                 epochs_path, "{}_val_metrics.pkl".format(epoch)))
             torch.save(train_metrics, os.path.join(
                 epochs_path, "{}_train_metrics.pkl".format(epoch)))
+            np.save(os.path.join(
+                cm_path, "{}_train_metrics".format(epoch)), cm_train)
+            np.save(os.path.join(
+                cm_path, "{}_val_metrics".format(epoch)), cm_val)
 
             val_score = val_metrics["micro avg"]["f1-score"]
             if best_val_score < val_score:
