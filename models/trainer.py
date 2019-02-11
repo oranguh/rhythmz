@@ -153,7 +153,7 @@ class Trainer:
         cm_path = os.path.join(model_path, "confusion_matrix")
         mkdir(cm_path)
 
-        optimizer = Adam(self.clf.parameters())
+        optimizer = Adam(self.clf.parameters(), weight_decay=1/(600*7))
 
         best_val_score = 0
         best_model = self.clf.state_dict()

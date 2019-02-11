@@ -57,8 +57,6 @@ class AudioDataset(Dataset):
         sound, sample_rate = librosa.load(aud_path)
         if self.transforms:
             sound = self.transforms(sound)
-        sound = torch.from_numpy(sound)
-
         return sound
 
     def __getitem__(self, idx):
@@ -67,14 +65,13 @@ class AudioDataset(Dataset):
         if self.cache:
             _id = hashlib.sha1(
                 (self.transforms_str + aud_path).encode()).hexdigest()
-            cache_path = os.path.join(self.cache_dir, _id)
-
+            cache_path = os.path.join(self.cache_dir, _id) + ".npy"
             if os.path.exists(cache_path):
                 sound = np.load(cache_path)
             else:
                 sound = self._load(idx)
                 np.save(cache_path, sound)
-
+            sound = torch.from_numpy(sound)
             return sound, self.one_hot(cl)
         else:
             return self._load(idx), self.one_hot(cl)
