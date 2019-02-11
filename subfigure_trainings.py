@@ -25,6 +25,13 @@ def main():
             for file in tqdm(fileList):
                 # continue
                 epoch = file.split("_")[0]
+                train_val = file.split("_")[1]
+                if not (int(epoch) == 4):
+                    continue
+                if (train_val == "train"):
+                    continue
+                if (train_val == "val"):
+                    continue
                 language_list = ["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"]
                 confusion_title = os.path.split(os.path.split(dirName)[0])[1]
                 confusion_matrix = np.load(os.path.join(dirName, file))
@@ -40,12 +47,12 @@ def main():
                     df_cm = pd.DataFrame(confusion_real_matrix, language_list,
                       language_list)
                     plt.figure(figure_count)#, figsize = (10,7))
-                    plt.title("epoch: {}  ".format(epoch) + confusion_title)
+                    plt.title("{}  epoch: {} {}".format(train_val, epoch, confusion_title))
                     figure_count += 1
 
                     # sn.set(font_scale=1.4)#for label size
                     sn.heatmap(df_cm, annot=True,annot_kws={"size": 16}, fmt='g')# font size
-                    plt.show()
+
 
                 if boxplot:
                     df = pd.DataFrame(columns=["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"],
@@ -63,8 +70,8 @@ def main():
                     df.T.plot(kind='bar', stacked=True)
                     # plt.xlabel("Languages")
                     plt.ylabel("Predicted")
-                    plt.title("epoch: {}  ".format(epoch) + confusion_title)
-                    # plt.show()
+                    plt.title("{}  epoch: {} {}".format(train_val, epoch, confusion_title))
+                plt.show()
 
         if os.path.split(dirName)[-1] == ("epochs"):
             y_train = []
@@ -101,13 +108,21 @@ def main():
         plt.plot(x, y_train, 'o-', label="training")
         plt.plot(x, y_val, 'r.-', label="validation")
         plt.ylim(0, 1)
-        plt.xlim(0, 10)
+        plt.xlim(0, 5)
         plt.ylabel("precision")
         plt.xlabel("epoch")
+        if (not (i+1 == 8 or i+1 == 7)):
+            plt.xlabel("")
+            plt.tick_params(
+                            axis='x',          # changes apply to the x-axis
+                            which='both',      # both major and minor ticks are affected
+                            bottom=False,      # ticks along the bottom edge are off
+                            top=False,         # ticks along the top edge are off
+                            labelbottom=False)
     blue = mpatches.Patch(color='blue', label='Training')
     red = mpatches.Patch(color='red', label='Validation')
     plt.legend(handles=[blue, red])
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.show()
 
 
