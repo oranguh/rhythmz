@@ -26,7 +26,7 @@ def get_dataset(path, features, sample_rate, mean, std):
     if features == "raw":
         if mean and std:
             transforms = StdScaler(
-                mean=mean, std=args.data_std)
+                mean=mean, std=std)
         else:
             transforms = None
         # no need to cache if we're using raw audio
@@ -37,9 +37,10 @@ def get_dataset(path, features, sample_rate, mean, std):
                 mean=mean, std=std)])
         else:
             transforms = MelSpectogram(sample_rate)
-        # cache if we're using raw audio
+        # cache if we're using MelSpectogram
         cache = True
 
+    log.info("Transforms: {}".format(transforms))
     return AudioDataset(path,
                         sample_rate=sample_rate,
                         transforms=transforms,
@@ -153,7 +154,7 @@ class Trainer:
         cm_path = os.path.join(model_path, "confusion_matrix")
         mkdir(cm_path)
 
-        optimizer = Adam(self.clf.parameters(), weight_decay=1/(600*7))
+        optimizer = Adam(self.clf.parameters(), weight_decay=1/(200*9))
 
         best_val_score = 0
         best_model = self.clf.state_dict()

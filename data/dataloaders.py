@@ -74,4 +74,4 @@ class AudioDataset(Dataset):
             sound = torch.from_numpy(sound)
             return sound, self.one_hot(cl)
         else:
-            return self._load(idx), self.one_hot(cl)
+            return torch.from_numpy(self._load(idx)), self.one_hot(cl)
