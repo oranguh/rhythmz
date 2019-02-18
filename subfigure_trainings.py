@@ -14,7 +14,7 @@ def main():
     boxplot = True
     confusion = True
 
-    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\indic"
+    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\topCoder"
     # all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\indic"
     images_path = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\images"
 
@@ -25,13 +25,12 @@ def main():
     titles = []
     figure_count = 0
     for dirName, subdirList, fileList in os.walk(all_models):
-        # print(dirName)
         if os.path.split(dirName)[-1] == ("confusion_matrix"):
             for file in tqdm(fileList):
                 # continue
                 epoch = file.split("_")[0]
                 train_val = file.split("_")[1]
-                if not (int(epoch) == 4):
+                if not (int(epoch) == 49):
                     continue
                 if (train_val == "train"):
                     # continue
@@ -42,7 +41,7 @@ def main():
                 if dataset == "indic":
                     language_list = ["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"]
                 elif dataset == "topCoder":
-                    language_list = ["arabic", "dutch", "hindi", "N korean", "S korean", "polish", "romanian", "thai", "vietnamese"]
+                    language_list = ["arabic", "dutch", "hindi", "N korean", "polish", "romanian", "thai", "vietnamese"]
                 confusion_title = os.path.split(os.path.split(dirName)[0])[1]
                 confusion_matrix = np.load(os.path.join(dirName, file))
                 # print(type(confusion_matrix))
@@ -103,10 +102,13 @@ def main():
                     fig.savefig(savefile, bbox_inches='tight')
                 # plt.show()
                 plt.close('all')
+
         if os.path.split(dirName)[-1] == ("epochs"):
             y_train = []
             y_val = []
+            fileList = sorted(fileList, key=lambda _: int(_.split("_")[0]))
             for file in tqdm(fileList):
+
                 if "train" in file:
                     train_data = os.path.join(dirName, file)
                     performance = torch.load(train_data)
