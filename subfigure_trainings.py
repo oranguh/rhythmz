@@ -13,11 +13,13 @@ import pandas as pd
 def main():
     boxplot = True
     confusion = True
-    indic = False
-    topCoder = True
-    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\topCoder"
+
+    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\indic"
     # all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\indic"
     images_path = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\images"
+
+    dataset = os.path.split(all_models)[1]
+
     y_trains = []
     y_vals = []
     titles = []
@@ -29,7 +31,7 @@ def main():
                 # continue
                 epoch = file.split("_")[0]
                 train_val = file.split("_")[1]
-                if not (int(epoch) == 49):
+                if not (int(epoch) == 4):
                     continue
                 if (train_val == "train"):
                     # continue
@@ -37,9 +39,9 @@ def main():
                 if (train_val == "val"):
                     # continue
                     pass
-                if indic:
+                if dataset == "indic":
                     language_list = ["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"]
-                if topCoder:
+                elif dataset == "topCoder":
                     language_list = ["arabic", "dutch", "hindi", "N korean", "S korean", "polish", "romanian", "thai", "vietnamese"]
                 confusion_title = os.path.split(os.path.split(dirName)[0])[1]
                 confusion_matrix = np.load(os.path.join(dirName, file))
@@ -65,33 +67,33 @@ def main():
                     plt.savefig(savefile, bbox_inches='tight')
 
                 if boxplot:
-                    if indic:
-                        df = pd.DataFrame(columns=["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"],
-                                    data = {"bengali": [i for i in confusion_real_matrix[0]],
-                                    "hindi": [i for i in confusion_real_matrix[1]],
-                                    "kannada": [i for i in confusion_real_matrix[2]],
-                                    "malayalam": [i for i in confusion_real_matrix[3]],
-                                    "marathi": [i for i in confusion_real_matrix[4]],
-                                    "tamil": [i for i in confusion_real_matrix[5]],
-                                    "telegu": [i for i in confusion_real_matrix[6]]},
-                                    index=["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"])
-                    if topCoder:
-                        df = pd.DataFrame(columns=["arabic", "dutch", "hindi", "N korean", "S korean", "polish", "romanian", "thai", "vietnamese"],
-                                    data = {"arabic": [i for i in confusion_real_matrix[0]],
-                                    "dutch": [i for i in confusion_real_matrix[1]],
-                                    "hindi": [i for i in confusion_real_matrix[2]],
-                                    "N korean": [i for i in confusion_real_matrix[3]],
-                                    "S korean": [i for i in confusion_real_matrix[4]],
-                                    "polish": [i for i in confusion_real_matrix[5]],
-                                    "romanian": [i for i in confusion_real_matrix[6]],
-                                    "thai": [i for i in confusion_real_matrix[7]],
-                                    "vietnamese": [i for i in confusion_real_matrix[8]]},
-                                    index=["arabic", "dutch", "hindi", "N korean", "S korean", "polish", "romanian", "thai", "vietnamese"])
+                    if dataset == "indic":
+                        df = pd.DataFrame(columns=language_list,
+                                    data = confusion_real_matrix.T,
+                                    index=language_list)
+                    if dataset == "topCoder":
+                        df = pd.DataFrame(columns=language_list,
+                                    data = confusion_real_matrix.T,
+                                    index=language_list)
                     # plt.figure(figure_count)
                     # figure_count += 1
                     # color = ['turquoise', 'darkgreen', 'tomato', 'indianred', 'forestgreen', 'sienna', 'darkorange']
                     sn.set()
-                    fig = df.T.plot(kind='bar', stacked=True).get_figure()
+                    # fig = df.T.plot(legend = False, kind='bar', stacked=True).get_figure()
+
+                    ax = plt.figure(figsize=(10, 6)).add_subplot(111)
+                    fig = df.T.plot(ax=ax, kind='bar', stacked=True, legend=True).get_figure()
+
+                    bars = ax.patches
+                    # print(len(['-', '+', 'x','/','//','O','o','\\','\\\\']), len(df))
+                    hatches = ''.join(h*len(df) for h in ['-', '+', 'x','/','//','O','o','|','*'])#'x/O.')
+                    # print(hatches)
+                    # print("\n", len(bars), len(hatches), len(language_list), "\n")
+                    for bar, hatch in zip(bars, hatches):
+                        bar.set_hatch(hatch)
+
+                    # ax.legend(loc='center right', bbox_to_anchor=(1, 1), ncol=4)
+
                     # plt.xlabel("Languages")
                     plt.ylabel("Predicted")
                     plt.title("{}  epoch: {} {}".format(train_val, epoch, confusion_title))
@@ -130,15 +132,17 @@ def main():
         y_train = y_trains[i]
         y_val = y_vals[i]
         x = list(range(0, len(y_val)))
+        epoch_count = len(subplots)
 
-        plt.subplot(4, 2, i+1).set_title(titles[i])
+        plt.subplot(len(y_trains), 1, i+1).set_title(titles[i])
         plt.plot(x, y_train, 'o-', label="training")
         plt.plot(x, y_val, 'r.-', label="validation")
-        plt.ylim(0, 1)
-        plt.xlim(0, 50)
+        plt.ylim(0, 1.1)
+        plt.xlim(0, epoch_count)
         plt.ylabel("precision")
         plt.xlabel("epoch")
-        if (not (i+1 == 8 or i+1 == 7)):
+        # if (not (i+1 == 8 or i+1 == 7)):
+        if (not (i+1 == len(y_trains))):
             plt.xlabel("")
             plt.tick_params(
                             axis='x',          # changes apply to the x-axis

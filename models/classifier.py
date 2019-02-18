@@ -161,6 +161,34 @@ class AudioClassifier(nn.Module):
             lstm_out, hidden = self.lstm(features.view(N, 1, -1), hidden)
             return lstm_out[-1]
         raise ValueError("Unavailable method '{}'".format(self.combine))
+    def marcos_combine_stride_features(self, features, stacked_batches_sizes):
+        if self.combine == "MoT":
+            feats_batched = []
+            start_idx = 0
+            for batch_sizer in stacked_batches_sizes:
+                batch_sizer = start_idx + batch_sizer
+                feats, _ = features[start_idx:batch_sizer].max(0)
+                feats_batched.append(feats)
+                # print(batch_sizer)
+                start_idx = batch_sizer
+
+            return feats_batched
+        elif self.combine == "LSTM":
+            feats_batched = []
+            start_idx = 0
+            for batch_sizer in stacked_batches_sizes:
+                batch_sizer = start_idx + batch_sizer
+                hidden = self._init_hidden()
+                N = features[start_idx:batch_sizer].size(0)
+                print(features[start_idx:batch_sizer].view(N, 1, -1).shape)
+                print(features[start_idx:batch_sizer].size(0), features[0].shape)
+                lstm_out, hidden = self.lstm(features[start_idx:batch_sizer].view(N, 1, -1), hidden)
+                start_idx = batch_sizer
+                feats_batched.append(lstm_out[-1])
+            print(feats_batched[0].shape)
+            print(a)
+            return feats_batched
+        raise ValueError("Unavailable method '{}'".format(self.combine))
 
     def forward(self, x):
         out = torch.zeros(len(x), self.n_classes).to(self.device)
@@ -168,20 +196,40 @@ class AudioClassifier(nn.Module):
         # get the features, combine them
         # classify it!
 
-        batched_features = torch.zeros(len(x), self.feature_size).to(self.device)
-        for idx, data_point in enumerate(x):
-            stacked = self.stack_strides(data_point).unsqueeze(1)
-            # print(stacked.shape)
-            features = self.layers(stacked)
-            # features = self.layers(data_point.unsqueeze(0).unsqueeze(0))
+        if True:
+            batched_features = torch.zeros(len(x), self.feature_size).to(self.device)
+            stacked_batched_data = []
+            stacked_batches_sizes = []
+
+            for idx, data_point in enumerate(x):
+                stacked = self.stack_strides(data_point).unsqueeze(1)
+                stacked_batched_data.append(stacked)
+                stacked_batches_sizes.append(stacked.size(0))
+
+            stacked_batch = torch.cat(stacked_batched_data, dim=0)
+            features = self.layers(stacked_batch)
             features = features.squeeze()
             # flatten
-            features = features.view(stacked.size(0), self.feature_size)
-            features = self.combine_stride_features(features)
-            # print(features.unsqueeze(0).shape)
-            batched_features[idx] = features.unsqueeze(0)
+            features = self.marcos_combine_stride_features(features, stacked_batches_sizes)
+            batched_features = torch.stack(features)
+            out = self.classifier(batched_features.view(len(x), self.feature_size))
 
-        out = self.classifier(batched_features)
+        if False:
+            batched_features = torch.zeros(len(x), self.feature_size).to(self.device)
+            for idx, data_point in enumerate(x):
+                stacked = self.stack_strides(data_point).unsqueeze(1)
+                # print(stacked.shape)
+                features = self.layers(stacked)
+                # features = self.layers(data_point.unsqueeze(0).unsqueeze(0))
+                features = features.squeeze()
+                # flatten
+                features = features.view(stacked.size(0), self.feature_size)
+                features = self.combine_stride_features(features)
+                # print(features.unsqueeze(0).shape)
+                batched_features[idx] = features.unsqueeze(0)
+
+            out = self.classifier(batched_features)
+
 
         if not self.training:
             out = F.softmax(out, 1)
