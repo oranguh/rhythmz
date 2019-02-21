@@ -8,7 +8,7 @@ import numpy as np
 import pylab
 from tqdm import tqdm
 import matplotlib.image as mpimg
-# import eyed3
+import eyed3
 
 def main():
 
@@ -17,10 +17,15 @@ def main():
     #
     # process_librivox_data(root_dir, save_dir)
 
-    rootDir = "/media/meow/72A23121A230EAED/daata/new_dataset"
-    rootDir = "D:\\daata\\indic_splits"
-    rootDir = "D:\\daata\\top_coder_challenge\\Selected Data Train"
-    process_audio_data(rootDir)
+    # rootDir = "/media/meow/72A23121A230EAED/daata/new_dataset"
+    # rootDir = "D:\\daata\\indic_splits"
+    # rootDir = "D:\\daata\\top_coder_challenge\\Selected Data Train"
+    # process_audio_data(rootDir)
+
+
+    root_dir = "D:\daata\librivox\Multilingual"
+    save_dir = "D:\daata\librivox_Processed\multilingual_ordered"
+    process_librivox_data(root_dir, save_dir)
 
 
 def top_coder_extractor():
@@ -159,8 +164,6 @@ def process_librivox_data(root_dir, save_dir):
                 continue
             # print(dirName + "/" + fname)
 
-
-
             print("\n",fname, "\t", dirName)
 
             # big ass strip split thing to get language of audiofile
@@ -172,36 +175,43 @@ def process_librivox_data(root_dir, save_dir):
             except KeyError:
                 language_counter_dict[audiofile_language] = 1
 
+            if not os.path.isdir(os.path.join(save_dir, "numpy_melspec")):
+                os.mkdir(os.path.join(save_dir, "numpy_melspec"))
+            if not os.path.isdir(os.path.join(save_dir, "wav_files")):
+                os.mkdir(os.path.join(save_dir, "wav_files"))
+
             if not os.path.isdir(os.path.join(save_dir, "numpy_melspec", audiofile_language)):
                 os.mkdir(os.path.join(save_dir, "numpy_melspec", audiofile_language))
             if not os.path.isdir(os.path.join(save_dir, "wav_files", audiofile_language)):
                 os.mkdir(os.path.join(save_dir, "wav_files", audiofile_language))
 
             # try:
-            #     folder_name = save_dir + "/" + "numpy_melspec" + "/" + audiofile_language
+            #     folder_name = os.path.join(save_dir, "numpy_melspec", audiofile_language)
             #     os.mkdir(folder_name);
             # except FileExistsError:
             #     pass
             # try:
-            #     folder_name = save_dir + "/" + "wav_files" + "/" + audiofile_language
+            #     folder_name = os.path.join(save_dir, "wav_files", audiofile_language)
             #     os.mkdir(folder_name);
             # except FileExistsError:
             #     pass
 
             y, sr = librosa.load(os.path.join(dirName, fname))
-            S = MelSpectogram(sr)
+            new_sr = 16000
+            y_new_sr = librosa.resample(y, sr, new_sr)
+            S = MelSpectogram(new_sr)
 
             check_if_exists = os.path.join(save_dir, "numpy_melspec", audiofile_language, audiofile_language + "_" + str(language_counter_dict[audiofile_language]) + "_0.npy")
             print(os.path.isfile(check_if_exists))
             if not os.path.isfile(check_if_exists):
-                split_audio = audio_splitter_upper(y, 20, sr, 20)
+                split_audio = audio_splitter_upper(y_new_sr, 10, new_sr, 20)
                 print(len(split_audio))
                 for i, audio_fragment in enumerate(split_audio):
                     savename = os.path.join(save_dir, "numpy_melspec", audiofile_language, audiofile_language + "_" + str(language_counter_dict[audiofile_language]) + "_" + str(i))
                     print(savename)
-                    np.save(savename, S(audio_fragment))
-                    savename = savename.replace("numpy_melspec", "wav_files")
-                    librosa.output.write_wav(savename, audio_fragment, sr)
+                    # np.save(savename, S(audio_fragment))
+                    savename = savename.replace("numpy_melspec", "wav_files") + ".wav"
+                    librosa.output.write_wav(savename, audio_fragment, new_sr)
     print(language_counter_dict)
 
 
