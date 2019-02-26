@@ -9,6 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 
 MAIN_URL = "https://librivox.org/search?title=&author=&reader=&keywords=&genre_id=0&status=complete&project_type=solo&recorded_language={language_id}&sort_order=catalog_date&search_page={search_page}&search_form=advanced"
@@ -21,8 +22,13 @@ def mkdir(path):
 
 
 def wait_till_class(driver, class_id, timeout=10):
-    element_present = EC.presence_of_element_located((By.CLASS_NAME, class_id))
-    WebDriverWait(driver, timeout).until(element_present)
+    try:
+        element_present = EC.presence_of_element_located(
+            (By.CLASS_NAME, class_id))
+        WebDriverWait(driver, timeout).until(element_present)
+        return True
+    except TimeoutException:
+        return False
 
 
 def get_languages():
@@ -50,15 +56,18 @@ def download_lang(args, lang, languages):
             language_id=lang_id, search_page=next_search_page)
 
         driver.get(url)
-        wait_till_class(driver, "catalog-result")
+        valid = wait_till_class(driver, "catalog-result")
+        if not valid:
+            log.warning("No results / didn't load. Quitting")
+            next_search_page = None
+            continue
+
         page = bs4.BeautifulSoup(driver.page_source, "html.parser")
 
         results = page.find_all("li", class_="catalog-result")
         for res in results:
             url = res.find("h3").a["href"]
             url_set.add(url)
-
-        book_count = len(url_set)
 
         next_page_avail = page.find("div", class_="page-number-nav")
 
@@ -69,22 +78,21 @@ def download_lang(args, lang, languages):
             page_nos = [a.text for a in next_page_avail.find_all("a")]
             page_nos = [int(pg) for pg in page_nos if pg.isdigit()]
 
-            max_page = max(page_nos)
-            log.debug("Max page: {}".format(max_page))
-            # if we've reached the end i.e the current search_page is == max
-            # then quit!
-            if next_search_page == max_page:
+            if len(page_nos) == 0:
                 next_search_page = None
             else:
-                next_search_page += 1
-
-        if len(url_set) >= args.limit:
-            log.info("Reached limit. Quitting!")
-            break
+                max_page = max(page_nos)
+                log.debug("Max page: {}".format(max_page))
+                # if we've reached the end i.e the current search_page is == max
+                # then quit!
+                if next_search_page == max_page:
+                    next_search_page = None
+                else:
+                    next_search_page += 1
 
     driver.close()
 
-    log.info("Scraped links for {} books".format(book_count))
+    log.info("Scraped links for {} books".format(len(url_set)))
 
     write_path = "{}.txt".format(lang)
     with codecs.open(write_path, "w", "utf-8") as writer:
@@ -97,13 +105,8 @@ def download_lang(args, lang, languages):
 def get_argparser():
     parser = argparse.ArgumentParser(
         "librivox-scraper", description="Scrapes libribox")
-    parser.add_argument("--output", help="output folder", required=True)
     parser.add_argument("--selected-languages", dest="langs",
                         help="csv of languages that are downloaded. if this is not specified, the program lists all available langs")
-    parser.add_argument("--temp-dir", dest="temp_dir", default="./temp",
-                        help="location of the temporary directory where intermediate files are downloaded")
-    parser.add_argument(
-        "--limit", help="# books to download (max)", default=100000)
     return parser
 
 
@@ -119,13 +122,19 @@ if __name__ == '__main__':
 
     log.info("Args: {}".format(args))
 
-    mkdir(args.temp_dir)
-
     languages = get_languages()
     if not args.langs:
-        log.info("No languages selected. Printing options: ")
+        log.info("No languages selected. Downloading all")
         for lang in languages:
-            log.debug("\tFound language: {}".format(lang[1]))
+            lang = lang[1]
+            if not lang.isalpha():
+                log.info("Skipping {}".format(lang))
+                continue
+
+            if os.path.exists("{}.txt".format(lang)):
+                log.info("Already exists. Skipping {}".format(lang))
+            else:
+                download_lang(args, lang, languages)
     else:
         sel_langs = args.langs.split(",")
         log.info("Selected languages: {}".format(sel_langs))
