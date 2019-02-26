@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import numpy as np
 
 import torch
 from torch.optim import Adam
@@ -25,7 +26,7 @@ def get_dataset(path, features, sample_rate, mean, std):
     if features == "raw":
         if mean and std:
             transforms = StdScaler(
-                mean=mean, std=args.data_std)
+                mean=mean, std=std)
         else:
             transforms = None
         # no need to cache if we're using raw audio
@@ -36,9 +37,10 @@ def get_dataset(path, features, sample_rate, mean, std):
                 mean=mean, std=std)])
         else:
             transforms = MelSpectogram(sample_rate)
-        # cache if we're using raw audio
+        # cache if we're using MelSpectogram
         cache = True
 
+    log.info("Transforms: {}".format(transforms))
     return AudioDataset(path,
                         sample_rate=sample_rate,
                         transforms=transforms,
@@ -141,7 +143,7 @@ class Trainer:
         log.info("Epoch {} complete in {} seconds. Loss: {}".format(
             epoch, metrics["time"], metrics["epoch_loss"]))
 
-        return metrics
+        return metrics, cm.mat
 
     def train(self):
 
@@ -149,20 +151,26 @@ class Trainer:
         mkdir(model_path)
         epochs_path = os.path.join(model_path, "epochs")
         mkdir(epochs_path)
+        cm_path = os.path.join(model_path, "confusion_matrix")
+        mkdir(cm_path)
 
-        optimizer = Adam(self.clf.parameters())
+        optimizer = Adam(self.clf.parameters(), weight_decay=1/(200*9))
 
         best_val_score = 0
         best_model = self.clf.state_dict()
 
         for epoch in range(self.n_epochs):
-            train_metrics = self.train_epoch(epoch, optimizer, "train")
-            val_metrics = self.train_epoch(epoch, None, "val")
+            train_metrics, cm_train = self.train_epoch(epoch, optimizer, "train")
+            val_metrics, cm_val = self.train_epoch(epoch, None, "val")
 
             torch.save(val_metrics, os.path.join(
                 epochs_path, "{}_val_metrics.pkl".format(epoch)))
             torch.save(train_metrics, os.path.join(
                 epochs_path, "{}_train_metrics.pkl".format(epoch)))
+            np.save(os.path.join(
+                cm_path, "{}_train_metrics".format(epoch)), cm_train)
+            np.save(os.path.join(
+                cm_path, "{}_val_metrics".format(epoch)), cm_val)
 
             val_score = val_metrics["micro avg"]["f1-score"]
             if best_val_score < val_score:
