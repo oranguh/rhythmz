@@ -1,4 +1,5 @@
 import os
+import json
 import codecs
 import shutil
 import zipfile
@@ -8,8 +9,9 @@ import argparse
 from datetime import timedelta
 
 import bs4
-import requests
 import librosa
+import requests
+import numpy as np
 from librosa.core import get_duration
 
 from scraper import mkdir
@@ -21,11 +23,28 @@ def get_argparser():
     parser.add_argument(
         "--input", help="folder containing files with lists of URLS", required=True)
     parser.add_argument("--output", help="output folder", required=True)
+    parser.add_argument(
+        "--metadata", help="location to store metadata per clip", required=True)
     parser.add_argument("--temp-dir", dest="temp_dir", default="./temp",
                         help="location of the temporary directory where intermediate files are downloaded")
     parser.add_argument(
-        "--limit", help="max time to download", default="00:10:00")
+        "--limit", help="max time to download", default="00:01:00")
+    parser.add_argument("--max-clip-len", dest="max_clip_len", type=int,
+                        help="maximum clip length (seconds)", default=10)
+    parser.add_argument("--sample-rate", dest="sample_rate", default=8000,
+                        help="target sample rate")
     return parser
+
+
+def audio_splitter_upper(y, length, sr, margin=20):
+    split_audio = []
+    # remove start and end for that annoying librivox intro
+    y = y[margin*sr:-margin*sr]
+
+    while len(y) > length*sr:
+        split_audio.append(y[:length*sr])
+        y = y[length*sr:]
+    return np.asarray(split_audio)
 
 
 def download_file(url, destination):
@@ -35,7 +54,7 @@ def download_file(url, destination):
         shutil.copyfileobj(r.raw, f)
 
 
-def download_books(language, output_dir, temp_dir, url_list, max_time):
+def download_books(language, output_dir, temp_dir, url_list, max_time, args):
     current_time = timedelta(hours=0, minutes=0, seconds=0)
 
     to_move = []
@@ -93,16 +112,36 @@ def download_books(language, output_dir, temp_dir, url_list, max_time):
         # read time, and add to list
         for clip_id, file_name in enumerate(os.listdir(folder_loc)):
             file_path = os.path.join(folder_loc, file_name)
-            clip, sr = librosa.load(file_path)
-            clip_len = timedelta(seconds=get_duration(clip, sr=sr))
-            log.info("Loading clip: {}, Time: {}".format(file_path, clip_len))
-            to_move.append({
-                "path": file_path,
-                "book_id": book_id,
-                "clip_id": clip_id
-            })
-            log.debug("Current length: {}".format(current_time))
-            current_time += clip_len
+            full_clip, sr = librosa.load(file_path)
+
+            log.info("Loaded clip: {} ({})".format(
+                file_path, timedelta(seconds=get_duration(full_clip, sr))))
+
+            log.debug("Splitting clips!")
+            split_clips = audio_splitter_upper(
+                full_clip, args.max_clip_len, sr)
+            log.debug("Splitting clips done: {} splits made".format(
+                len(split_clips)))
+
+            for split_idx, clip in enumerate(split_clips):
+                # set to target sample rate
+                clip = librosa.resample(clip, sr, args.sample_rate)
+                clip_len = timedelta(seconds=get_duration(clip, sr=sr))
+                current_time += clip_len
+
+                split_clip_id = "{}_{}_{}".format(book_id, clip_id, split_idx)
+
+                dest_path = os.path.join(
+                    output_dir, "{}.wav".format(split_clip_id))
+
+                log.debug("Saving clip to {}. Total Time :{}".format(
+                    dest_path, current_time))
+
+                # write into wav
+                librosa.output.write_wav(dest_path, clip, args.sample_rate)
+
+                if current_time >= max_time:
+                    break
 
             if current_time >= max_time:
                 break
@@ -110,16 +149,13 @@ def download_books(language, output_dir, temp_dir, url_list, max_time):
         if current_time >= max_time:
             break
 
-    log.info("Total length: {}, Starting copy".format(current_time))
+    log.info("Total length: {}".format(current_time))
 
-    for file_data in to_move:
-        # TODO split the files into the given length
-        src_file_path = file_data["path"]
-        src_ext = os.path.split(src_file_path)[1].split(".")[1]
-        dest_path = os.path.join(output_dir, "{}_{}.{}".format(
-            file_data["book_id"], file_data["clip_id"], src_ext))
-        log.debug("Copying {} to {}".format(src_file_path, dest_path))
-        shutil.copyfile(file_path, dest_path)
+    meta_path = os.path.join(args.metadata, "{}.json".format(language))
+    log.info("Saving metadata to {}".format(meta_path))
+
+    with codecs.open(meta_path, "w", "utf-8") as writer:
+        json.dump(meta, writer)
 
 
 def read_urls(folder):
@@ -155,6 +191,7 @@ if __name__ == '__main__':
 
     mkdir(args.output)
     mkdir(args.temp_dir)
+    mkdir(args.metadata)
 
     urls = read_urls(args.input)
 
@@ -167,6 +204,7 @@ if __name__ == '__main__':
     for lang in urls:
         output_dir = os.path.join(args.output, lang)
         mkdir(output_dir)
-        download_books(lang, output_dir, args.temp_dir, urls[lang], max_time)
+        download_books(lang, output_dir, args.temp_dir,
+                       urls[lang], max_time, args)
 
     clear_dir(temp_dir)
