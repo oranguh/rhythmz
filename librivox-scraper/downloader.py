@@ -60,95 +60,99 @@ def download_books(language, output_dir, temp_dir, url_list, max_time, args):
     to_move = []
 
     meta = []
+
     for url in url_list:
-        page = bs4.BeautifulSoup(requests.get(url).text, "html.parser")
+        try:
+            page = bs4.BeautifulSoup(requests.get(url).text, "html.parser")
 
-        divs = page.find_all("div", class_="book-page-sidebar")
-        meta_data_div = [div for div in divs if div.h4.text ==
-                         "Production details"][0]
+            divs = page.find_all("div", class_="book-page-sidebar")
+            meta_data_div = [div for div in divs if div.h4.text ==
+                             "Production details"][0]
 
-        book_id = hashlib.md5(url.encode()).hexdigest()
+            book_id = hashlib.md5(url.encode()).hexdigest()
 
-        meta_data = {
-            "url": url,
-            "language": language,
-            "book_id": book_id
-        }
+            meta_data = {
+                "url": url,
+                "language": language,
+                "book_id": book_id
+            }
 
-        key_tags = meta_data_div.find_all("dt")
-        value_tags = meta_data_div.find_all("dd")
+            key_tags = meta_data_div.find_all("dt")
+            value_tags = meta_data_div.find_all("dd")
 
-        for key_tag, value_tag in zip(key_tags, value_tags):
-            value = value_tag.text.strip()
-            key = key_tag.text.strip().strip(":")
-            if key == "Read by":
-                reader_url = value_tag.find("a")["href"]
-                meta_data["reader_url"] = reader_url
-            meta_data[key] = value
+            for key_tag, value_tag in zip(key_tags, value_tags):
+                value = value_tag.text.strip()
+                key = key_tag.text.strip().strip(":")
+                if key == "Read by":
+                    reader_url = value_tag.find("a")["href"]
+                    meta_data["reader_url"] = reader_url
+                meta_data[key] = value
 
-        download_btns = page.find_all("a", class_="book-download-btn")
-        download_btn = [
-            btn for btn in download_btns if btn.text == "Download"][0]
-        zip_link = download_btn["href"]
+            download_btns = page.find_all("a", class_="book-download-btn")
+            download_btn = [
+                btn for btn in download_btns if btn.text == "Download"][0]
+            zip_link = download_btn["href"]
 
-        meta_data["zip_link"] = zip_link
+            meta_data["zip_link"] = zip_link
 
-        meta.append(meta_data)
+            meta.append(meta_data)
 
-        # see if the file exists in the temp dir - if it exists, don't download it
-        download_loc = os.path.join(temp_dir, book_id + ".zip")
-        folder_loc = os.path.join(temp_dir, book_id)
+            # see if the file exists in the temp dir - if it exists, don't download it
+            download_loc = os.path.join(temp_dir, book_id + ".zip")
+            folder_loc = os.path.join(temp_dir, book_id)
 
-        # download zip file
-        if not os.path.exists(download_loc):
-            log.info("Downloading {} to {}".format(zip_link, download_loc))
-            download_file(zip_link, download_loc)
+            # download zip file
+            if not os.path.exists(download_loc):
+                log.info("Downloading {} to {}".format(zip_link, download_loc))
+                download_file(zip_link, download_loc)
 
-        log.info("Extracting {} to {}".format(download_loc, folder_loc))
-        # extract zip file
-        with zipfile.ZipFile(download_loc, "r") as zip_ref:
-            zip_ref.extractall(folder_loc)
+            log.info("Extracting {} to {}".format(download_loc, folder_loc))
+            # extract zip file
+            with zipfile.ZipFile(download_loc, "r") as zip_ref:
+                zip_ref.extractall(folder_loc)
 
-        # read time, and add to list
-        for clip_id, file_name in enumerate(os.listdir(folder_loc)):
-            file_path = os.path.join(folder_loc, file_name)
-            full_clip, sr = librosa.load(file_path)
+            # read time, and add to list
+            for clip_id, file_name in enumerate(os.listdir(folder_loc)):
+                file_path = os.path.join(folder_loc, file_name)
+                full_clip, sr = librosa.load(file_path)
 
-            log.info("Loaded clip: {} ({})".format(
-                file_path, timedelta(seconds=get_duration(full_clip, sr))))
+                log.info("Loaded clip: {} ({})".format(
+                    file_path, timedelta(seconds=get_duration(full_clip, sr))))
 
-            log.debug("Splitting clips!")
-            split_clips = audio_splitter_upper(
-                full_clip, args.max_clip_len, sr)
-            log.debug("Splitting clips done: {} splits made".format(
-                len(split_clips)))
+                log.debug("Splitting clips!")
+                split_clips = audio_splitter_upper(
+                    full_clip, args.max_clip_len, sr)
+                log.debug("Splitting clips done: {} splits made".format(
+                    len(split_clips)))
 
-            for split_idx, clip in enumerate(split_clips):
-                # set to target sample rate
-                clip = librosa.resample(clip, sr, args.sample_rate)
-                clip_len = timedelta(seconds=get_duration(clip, sr=sr))
-                current_time += clip_len
+                for split_idx, clip in enumerate(split_clips):
+                    # set to target sample rate
+                    clip = librosa.resample(clip, sr, args.sample_rate)
+                    clip_len = timedelta(seconds=get_duration(clip, sr=sr))
+                    current_time += clip_len
 
-                split_clip_id = "{}_{}_{}".format(book_id, clip_id, split_idx)
+                    split_clip_id = "{}_{}_{}".format(
+                        book_id, clip_id, split_idx)
 
-                dest_path = os.path.join(
-                    output_dir, "{}.wav".format(split_clip_id))
+                    dest_path = os.path.join(
+                        output_dir, "{}.wav".format(split_clip_id))
 
-                log.debug("Saving clip to {}. Total Time :{}".format(
-                    dest_path, current_time))
+                    log.debug("Saving clip to {}. Total Time :{}".format(
+                        dest_path, current_time))
 
-                # write into wav
-                librosa.output.write_wav(dest_path, clip, args.sample_rate)
+                    # write into wav
+                    librosa.output.write_wav(dest_path, clip, args.sample_rate)
+
+                    if current_time >= max_time:
+                        break
 
                 if current_time >= max_time:
                     break
 
             if current_time >= max_time:
                 break
-
-        if current_time >= max_time:
-            break
-
+        except:
+            log.exception("Some exception occurred. Skipping!")
     log.info("Total length: {}".format(current_time))
 
     meta_path = os.path.join(args.metadata, "{}.json".format(language))
