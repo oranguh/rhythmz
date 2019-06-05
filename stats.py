@@ -8,8 +8,8 @@ import pandas as pd
 from librosa.core import get_duration
 
 if __name__ == '__main__':
-    path = "librivox"
-    meta_path = "librivox_metadata"
+    path = "librivox-scraper/test"
+    meta_path = "datasets/librivox_new/librivox_metadata"
     assigned_sample_rate = 8000
     times = []
 
@@ -34,7 +34,6 @@ if __name__ == '__main__':
             lambda: timedelta(hours=0, minutes=0, seconds=0))
 
         for idx, file_id in enumerate(all_files):
-
             file_path = os.path.join(cl_path, file_id)
             sound, sample_rate = librosa.load(file_path, sr=None)
             assert sample_rate == assigned_sample_rate
@@ -42,7 +41,6 @@ if __name__ == '__main__':
                 seconds=get_duration(sound, sr=sample_rate))
 
             book_id = file_id.split("_")[0]
-
             book_ids[book_id] += timedelta(
                 seconds=get_duration(sound, sr=sample_rate))
             author_ids[meta_data[book_id]["reader_url"]] += timedelta(
