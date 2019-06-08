@@ -8,8 +8,8 @@ import pandas as pd
 from librosa.core import get_duration
 
 if __name__ == '__main__':
-    path = "librivox-scraper/test"
-    meta_path = "datasets/librivox_new/librivox_metadata"
+    path = "datasets/librivox"
+    meta_path = "datasets/librivox_metadata"
     assigned_sample_rate = 8000
     times = []
 
