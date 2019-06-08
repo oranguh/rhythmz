@@ -41,6 +41,8 @@ def get_argparser():
     parser.add_argument(
         "--min-authors", dest="min_authors", type=int,
         help="the minimum number of authors to download (otherwise that language is ignored)", default=2)
+    parser.add_argument("--max-authors", dest="max_authors", type=int,
+                        help="max number of authors to download", default=6)
     parser.add_argument("--max-per-author", dest="max_per_author", default=2,
                         type=int, help="max # books to download per author")
     return parser
@@ -188,6 +190,10 @@ def download_books(language, output_dir, temp_dir, url_list, max_time, args):
         log.info(
             "Ignoring language {} because only {} authors are available. Min: {}".format(language, len(authors), args.min_authors))
         return
+    if len(authors) > args.max_authors:
+        log.info("Too many authors, so selecting {} authors only".format(
+            args.max_authors))
+        authors = sorted(list(authors))[:args.max_authors]
 
     log.info("Sampling from {} authors: {}".format(len(authors), authors))
 
@@ -304,7 +310,15 @@ if __name__ == '__main__':
 
     log.info("Max Time: {}".format(max_time))
 
+    # skip_langs = ["Arabic", "Balinese", "Bulgarian", "Chinese",
+    #               "Danish", "Dutch", "English", "Esperanto", "Finnish", "French",
+    #               "German", "Greek", "Hebrew", "Hungarian", "Indonesian", "Italian",
+    #               "Japanese", "Korean", "Latin", "Latvian", "Multilingual", "Portuguese", "Russian",
+    #               "Spanish", "Sudanese", "Swedish"]
     for lang in urls:
+        if lang in skip_langs:
+            log.info("Skipping lang: {}".format(lang))
+            continue
         output_dir = os.path.join(args.output, lang)
         mkdir(output_dir)
         download_books(lang, output_dir, args.temp_dir,
