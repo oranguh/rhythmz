@@ -56,10 +56,6 @@ if __name__ == '__main__':
                 if idx % print_freq == 0:
                     log.info("\t\t{} of {} done".format(idx, len(clips)))
 
-            break
-
-        break
-
     row_data = []
     for (split, lang, author_id, book_id), td in data.items():
         row_data.append({
