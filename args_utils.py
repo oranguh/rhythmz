@@ -6,13 +6,9 @@ def add_train_args(parser):
                         choices=["mel-spectogram", "raw"],
                         required=True,
                         help="the features to use for training the network")
-    parser.add_argument("--combine", type=str,
-                        choices=["MoT", "LSTM"],
-                        required=True,
-                        help="the method to use for aggregating features learnt over time")
     parser.add_argument("--batch-size", dest="batch_size",
-                        type=int, default=2, help="batch size for training")
-    parser.add_argument("--epochs", type=int, default=1,
+                        type=int, default=32, help="batch size for training")
+    parser.add_argument("--epochs", type=int, default=30,
                         help="batch size for training")
     parser.add_argument("--results-path", dest="results_path", type=str,
                         default="results", help="location to store results")
@@ -20,17 +16,6 @@ def add_train_args(parser):
                         type=str, required=True, help="id of the experiment")
     parser.add_argument("--device", type=str, default="cpu",
                         help="device to train model on")
-    parser.add_argument("--sample-rate", required=True,
-                        help="sample rate of the audio", type=int, dest="sample_rate")
-    parser.add_argument("--data-mean", type=float, dest="data_mean",
-                        help="data mean. used to standardize the data", required=True)
-    parser.add_argument("--data-std", type=float, dest="data_std",
-                        help="data std. used to standardize the data", required=True)
-
-    parser.add_argument("--input-size", type=int, dest="input_size",
-                        help="size of the sliding window", required=True)
-    parser.add_argument("--input-stride", type=int, dest="input_stride",
-                        help="size of the hop / stride (time dimension)", required=True)
 
 
 def get_argparser():
@@ -62,8 +47,6 @@ def get_argparser():
                                 default=100, help="frequency for smoothing")
 
     parser_train = subparsers.add_parser("train", help="train the model")
-    parser_train.add_argument("--data", dest="data",
-                              type=str, required=True, help="location of input data")
     parser_train.add_argument(
         "--test", action="store_true", help="flag to test the model")
     add_train_args(parser_train)

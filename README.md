@@ -6,3 +6,9 @@ Execute:
 ```
 python download_indic.py indic_data/
 ```
+
+
+## Download librovox
+
+
+

@@ -53,13 +53,6 @@ class AudioDataset(Dataset):
         c[self.class_to_idx[cl]] = 1
         return c
 
-    def _load(self, idx):
-        _, aud_path = self.data[idx]
-        sound, sample_rate = librosa.load(aud_path, self.sample_rate)
-        if self.transforms:
-            sound = self.transforms(sound)
-        return sound
-
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
 
@@ -76,3 +69,48 @@ class AudioDataset(Dataset):
             return sound, self.one_hot(cl)
         else:
             return torch.from_numpy(self._load(idx)), self.one_hot(cl)
+
+
+def get_dataset(split, features):
+    if features == "raw":
+        transforms = None
+    elif features == "mel-spectogram":
+        transforms = Compose([MelSpectogram(sample_rate)])
+    log.info("Transforms: {}".format(transforms))
+    return LibrivoxDataset(split, transforms=transforms)
+
+
+class LibrivoxDataset(Dataset):
+    ROOT_PATH = "./datasets/librivox_splits/"
+
+    def __init__(self, split, transforms=None):
+        self.transforms = transforms
+        self.path = os.path.join(self.ROOT_PATH, split)
+        self.class_to_idx = {}
+        classes = sorted(os.listdir(self.path))
+        self.class_to_idx = {cl: idx for (idx, cl) in enumerate(classes)}
+        self.n_classes = len(classes)
+        self.data = []
+        for cl in self.class_to_idx:
+            count = 0
+            for file in os.listdir(os.path.join(self.path, cl)):
+                aud_file_path = os.path.join(self.path, cl, file)
+                self.data.append((cl, aud_file_path))
+                count += 1
+            log.debug("Class: {}. Instances: {}".format(cl, count))
+
+    def _load(self, idx):
+        _, aud_path = self.data[idx]
+        # set sr=None to load the clip with proper sr
+        sound, sample_rate = librosa.load(aud_path, sr=None)
+        if self.transforms:
+            sound = self.transforms(sound)
+        return sound
+
+    def __getitem__(self, idx):
+        cl, aud_path = self.data[idx]
+        cl = self.class_to_idx[cl]
+        return torch.LongTensor(cl), self._load(idx)
+
+    def __len__(self):
+        return len(self.data)

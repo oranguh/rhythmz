@@ -11,7 +11,7 @@ from torch.nn.modules.loss import CrossEntropyLoss
 from models import evaluate
 from models import classifier
 from utils.common import mkdir
-from data.dataloaders import AudioDataset
+from data.dataloaders import get_dataset
 from data.transforms import MelSpectogram, StdScaler, Compose
 
 
@@ -22,60 +22,28 @@ def collate_fn(batch):
     return [data, target]
 
 
-def get_dataset(path, features, sample_rate, mean, std):
-    if features == "raw":
-        if mean and std:
-            transforms = StdScaler(
-                mean=mean, std=std)
-        else:
-            transforms = None
-        # no need to cache if we're using raw audio
-        cache = False
-    elif features == "mel-spectogram":
-        if mean and std:
-            transforms = Compose([MelSpectogram(sample_rate), StdScaler(
-                mean=mean, std=std)])
-        else:
-            transforms = MelSpectogram(sample_rate)
-        # cache if we're using MelSpectogram
-        cache = True
-
-    log.info("Transforms: {}".format(transforms))
-    return AudioDataset(path,
-                        sample_rate=sample_rate,
-                        transforms=transforms,
-                        cache=cache)
-
-
 log = logging.getLogger(__name__)
 
 
 class Trainer:
     def __init__(self, args):
 
+        self.features = args.features
+
         sets = {"train", "val", "test"}
 
         self.datasets = {}
         self.dataloaders = {}
-
-        if args.features == "raw":
-            transforms = StdScaler(
-                mean=args.data_mean, std=args.data_std)
-        elif args.features == "mel-spectogram":
-            transforms = Compose([MelSpectogram(args.sample_rate), StdScaler(
-                mean=args.data_mean, std=args.data_std)])
-
+        self.dataset_sizes = {}
         for s in sets:
-            self.datasets[s] = get_dataset(os.path.join(
-                args.data, s), args.features, args.sample_rate, args.data_mean, args.data_std)
+            self.datasets[s] = get_dataset(s, self.features)
             self.dataloaders[s] = DataLoader(
-                self.datasets[s], batch_size=args.batch_size, collate_fn=collate_fn)
+                self.datasets[s], batch_size=args.batch_size)
 
         self.device = torch.device(args.device)
 
-        self.clf = classifier.AudioClassifier(
-            args.combine, args.features, args.input_size,
-            args.input_stride, self.datasets["train"].n_classes, self.device)
+        self.clf = classifier.LibrivoxAudioClassifier(
+            args.features, self.datasets["train"].n_classes, self.device)
 
         self.clf = self.clf.to(self.device)
 
@@ -104,7 +72,7 @@ class Trainer:
         total = 0
 
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
-            x = [_.to(self.device).float() for _ in x]
+            x = x.to(self.device)
             y = y.to(self.device)
 
             if split == "train":
@@ -160,7 +128,8 @@ class Trainer:
         best_model = self.clf.state_dict()
 
         for epoch in range(self.n_epochs):
-            train_metrics, cm_train = self.train_epoch(epoch, optimizer, "train")
+            train_metrics, cm_train = self.train_epoch(
+                epoch, optimizer, "train")
             val_metrics, cm_val = self.train_epoch(epoch, None, "val")
 
             torch.save(val_metrics, os.path.join(

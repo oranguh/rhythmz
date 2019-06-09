@@ -3,7 +3,6 @@ import logging
 
 from data.dataloaders import AudioDataset
 from data.transforms import MelSpectogram
-from models.trainer import get_dataset
 
 log = logging.getLogger(__name__)
 
