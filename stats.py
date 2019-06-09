@@ -12,9 +12,7 @@ if __name__ == '__main__':
     meta_path = "datasets/librivox_metadata"
     assigned_sample_rate = 8000
     times = []
-
     author_times = []
-
     book_times = []
 
     for cl in os.listdir(path):
