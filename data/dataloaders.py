@@ -8,8 +8,8 @@ import librosa
 import numpy as np
 from torch.utils.data import Dataset
 
-from data.transforms import MelSpectogram
 from utils import common
+from data.transforms import MelSpectogram, StdScaler, Compose
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def get_dataset(split, features):
     if features == "raw":
         transforms = None
     elif features == "mel-spectogram":
-        transforms = Compose([MelSpectogram(sample_rate)])
+        transforms = Compose([MelSpectogram(8000)])
     log.info("Transforms: {}".format(transforms))
     return LibrivoxDataset(split, transforms=transforms)
 
@@ -110,7 +110,7 @@ class LibrivoxDataset(Dataset):
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
         cl = self.class_to_idx[cl]
-        return torch.LongTensor(cl), self._load(idx)
+        return torch.FloatTensor(self._load(idx)), torch.LongTensor([cl])
 
     def __len__(self):
         return len(self.data)

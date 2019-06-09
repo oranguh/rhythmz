@@ -12,7 +12,6 @@ from models import evaluate
 from models import classifier
 from utils.common import mkdir
 from data.dataloaders import get_dataset
-from data.transforms import MelSpectogram, StdScaler, Compose
 
 
 def collate_fn(batch):
@@ -70,6 +69,8 @@ class Trainer:
 
         correct = 0
         total = 0
+
+        print(self.datasets["train"][0])
 
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
             x = x.to(self.device)
