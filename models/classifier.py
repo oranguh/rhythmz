@@ -33,6 +33,7 @@ def get_feature_layers(features):
         index = add_vgg_conv_block(index, layers, 1, 16, 80, 16, stride=4)
         index = add_vgg_conv_block(index, layers, 16, 32, 3, 4)
         index = add_vgg_conv_block(index, layers, 32, 64, 3, 4)
+        index = add_vgg_conv_block(index, layers, 64, 32, 2, 4)
 
     elif features == "mel-spectogram":
         layers = OrderedDict()
@@ -76,7 +77,10 @@ class LibrivoxAudioClassifier(nn.Module):
         layers = get_feature_layers(self.features)
 
         self.layers = nn.Sequential(layers)
-        self.feature_size = 512
+        if self.features == "raw":
+            self.feature_size = 128
+        else:
+            self.feature_size = None
 
         log.info("Feature Size: {}".format(self.feature_size))
 
@@ -93,4 +97,5 @@ class LibrivoxAudioClassifier(nn.Module):
 
     def forward(self, x):
         features = self.layers(x)
+        features = features.view(x.size(0), -1)
         return self.classifier(features)

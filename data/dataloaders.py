@@ -110,7 +110,8 @@ class LibrivoxDataset(Dataset):
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]
         cl = self.class_to_idx[cl]
-        return torch.FloatTensor(self._load(idx)), torch.LongTensor([cl])
+        # reshape to 1 channel for easier conv operations
+        return torch.FloatTensor(self._load(idx)).view(1, -1), torch.LongTensor([cl])
 
     def __len__(self):
         return len(self.data)

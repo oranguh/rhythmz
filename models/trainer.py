@@ -70,12 +70,9 @@ class Trainer:
         correct = 0
         total = 0
 
-        print(self.datasets["train"][0])
-
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
             x = x.to(self.device)
             y = y.to(self.device)
-
             if split == "train":
                 optimizer.zero_grad()
 
