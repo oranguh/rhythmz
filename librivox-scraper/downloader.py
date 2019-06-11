@@ -1,12 +1,15 @@
 import os
+import sys
 import json
 import codecs
 import shutil
+import random
 import zipfile
 import logging
 import hashlib
 import argparse
 from datetime import timedelta
+from collections import defaultdict
 
 import bs4
 import librosa
@@ -15,6 +18,8 @@ import numpy as np
 from librosa.core import get_duration
 
 from scraper import mkdir
+
+MAX_META = 1500
 
 
 def get_argparser():
@@ -33,6 +38,13 @@ def get_argparser():
                         help="maximum clip length (seconds)", default=10)
     parser.add_argument("--sample-rate", dest="sample_rate", default=8000,
                         help="target sample rate")
+    parser.add_argument(
+        "--min-authors", dest="min_authors", type=int,
+        help="the minimum number of authors to download (otherwise that language is ignored)", default=2)
+    parser.add_argument("--max-authors", dest="max_authors", type=int,
+                        help="max number of authors to download", default=6)
+    parser.add_argument("--max-per-author", dest="max_per_author", default=2,
+                        type=int, help="max # books to download per author")
     return parser
 
 
@@ -54,46 +66,162 @@ def download_file(url, destination):
         shutil.copyfileobj(r.raw, f)
 
 
-def download_books(language, output_dir, temp_dir, url_list, max_time, args):
-    current_time = timedelta(hours=0, minutes=0, seconds=0)
-
-    to_move = []
-
+def download_meta(language, url_list):
     meta = []
-    for url in url_list:
-        page = bs4.BeautifulSoup(requests.get(url).text, "html.parser")
 
-        divs = page.find_all("div", class_="book-page-sidebar")
-        meta_data_div = [div for div in divs if div.h4.text ==
-                         "Production details"][0]
+    # first, download the metadata for all the books
+    for idx, url in enumerate(url_list):
+        if idx % 10 == 0:
+            log.info("\t{} of {}".format(idx + 1, len(url_list)))
+        if len(meta) >= MAX_META:
+            log.info("Maximum metadata length achieved. Quitting")
+            break
+        try:
+            page = bs4.BeautifulSoup(requests.get(url).text, "html.parser")
 
-        book_id = hashlib.md5(url.encode()).hexdigest()
+            divs = page.find_all("div", class_="book-page-sidebar")
+            meta_data_div = [div for div in divs if div.h4.text ==
+                             "Production details"][0]
 
-        meta_data = {
-            "url": url,
-            "language": language,
-            "book_id": book_id
-        }
+            book_id = hashlib.md5(url.encode()).hexdigest()
 
-        key_tags = meta_data_div.find_all("dt")
-        value_tags = meta_data_div.find_all("dd")
+            meta_data = {
+                "url": url,
+                "language": language,
+                "book_id": book_id
+            }
 
-        for key_tag, value_tag in zip(key_tags, value_tags):
-            value = value_tag.text.strip()
-            key = key_tag.text.strip().strip(":")
-            if key == "Read by":
-                reader_url = value_tag.find("a")["href"]
-                meta_data["reader_url"] = reader_url
-            meta_data[key] = value
+            key_tags = meta_data_div.find_all("dt")
+            value_tags = meta_data_div.find_all("dd")
 
-        download_btns = page.find_all("a", class_="book-download-btn")
-        download_btn = [
-            btn for btn in download_btns if btn.text == "Download"][0]
-        zip_link = download_btn["href"]
+            for key_tag, value_tag in zip(key_tags, value_tags):
+                value = value_tag.text.strip()
+                key = key_tag.text.strip().strip(":")
+                if key == "Read by":
+                    reader_url = value_tag.find("a")["href"]
+                    meta_data["reader_url"] = reader_url
+                meta_data[key] = value
 
-        meta_data["zip_link"] = zip_link
+            download_btns = page.find_all("a", class_="book-download-btn")
+            download_btn = [
+                btn for btn in download_btns if btn.text == "Download"][0]
+            zip_link = download_btn["href"]
 
-        meta.append(meta_data)
+            meta_data["zip_link"] = zip_link
+
+            meta.append(meta_data)
+
+        except KeyboardInterrupt:
+            log.exception("Keyboard Int. Quitting!")
+            sys.exit(-1)
+        except:
+            log.exception("Some exception occurred. Skipping!")
+
+    log.info("Downloaded metadata for {} books".format(len(meta)))
+    return meta
+
+
+def get_next_clip(all_files):
+    # select only clips that are available
+    all_files = [a for a in all_files if a["elapsed"] is False]
+    # if no more files are available, exit
+    if len(all_files) == 0:
+        return None
+
+    # randomly pick a file
+    selected_idx = np.random.randint(0, len(all_files))
+    selected_file = all_files[selected_idx]
+    file_path = selected_file["file_path"]
+
+    # load only part of the clip
+
+    clip, sr = librosa.load(
+        file_path, sr=args.sample_rate,
+        offset=selected_file["time_elapsed"].seconds,
+        duration=args.max_clip_len)
+
+    assert sr == args.sample_rate
+
+    clip_len = timedelta(
+        seconds=get_duration(clip, sr=sr))
+
+    if clip_len.seconds == 0:
+        selected_file["elapsed"] = True
+        return timedelta(seconds=0, hours=0, minutes=0)
+
+    elapsed_time = selected_file["time_elapsed"].seconds
+    # print("Clip ID: ", elapsed_time, "Clip Len:", clip_len,
+    #       "Time Elapsed: ", selected_file["time_elapsed"])
+    selected_file["time_elapsed"] += clip_len
+
+    split_clip_id = "{}_{}_{}".format(
+        selected_file["book_id"], selected_file["clip_id"], elapsed_time)
+    dest_path = os.path.join(
+        output_dir, "{}.wav".format(split_clip_id))
+
+    log.debug("Saving clip to {}".format(
+        dest_path))
+
+    librosa.output.write_wav(dest_path, clip, args.sample_rate)
+
+    return clip_len
+
+
+def download_books(language, output_dir, temp_dir, url_list, max_time, args):
+    log.info("Language: {}".format(language))
+
+    meta_path = os.path.join(args.metadata, "{}.json".format(language))
+
+    if os.path.exists(meta_path):
+        log.info("Metadata exists for {}, skipping download".format(language))
+        with codecs.open(meta_path, "r", "utf-8") as reader:
+            metadata = json.load(reader)
+    else:
+        log.info("Downloading metadata for {}".format(language))
+        metadata = download_meta(language, url_list)
+        # download the meta data for all the files
+        log.info("Saving metadata to {}".format(meta_path))
+        with codecs.open(meta_path, "w", "utf-8") as writer:
+            json.dump(metadata, writer)
+
+    authors = set(meta["reader_url"] for meta in metadata)
+    log.info("Language {} has {} authors".format(language, len(authors)))
+    if len(authors) < args.min_authors:
+        log.info(
+            "Ignoring language {} because only {} authors are available. Min: {}".format(language, len(authors), args.min_authors))
+        return
+    if len(authors) > args.max_authors:
+        log.info("Too many authors, so selecting {} authors only".format(
+            args.max_authors))
+        authors = sorted(list(authors))[:args.max_authors]
+
+    log.info("Sampling from {} authors: {}".format(len(authors), authors))
+
+    metadata_all = [m for m in metadata if m["reader_url"] in authors]
+
+    metadata_all = sorted(metadata_all, key=lambda _: _["reader_url"])
+
+    metadata = []
+    author_book_count = defaultdict(int)
+    for m in metadata_all:
+        author_id = m["reader_url"]
+        if author_book_count[author_id] >= args.max_per_author:
+            continue
+        author_book_count[author_id] += 1
+        metadata.append(m)
+
+    log.info("Attempting to download {} books".format(len(metadata)))
+
+    all_files = []
+
+    metadata.sort(key=lambda _: _["book_id"])
+
+    # first, download all the files and read in the file names
+    # we do this because we want many authors in the final audio clips
+    for meta in metadata:
+        book_id = meta["book_id"]
+        zip_link = meta["zip_link"]
+        author_id = meta["reader_url"]
 
         # see if the file exists in the temp dir - if it exists, don't download it
         download_loc = os.path.join(temp_dir, book_id + ".zip")
@@ -109,53 +237,31 @@ def download_books(language, output_dir, temp_dir, url_list, max_time, args):
         with zipfile.ZipFile(download_loc, "r") as zip_ref:
             zip_ref.extractall(folder_loc)
 
-        # read time, and add to list
+        # # read time, and add to list
         for clip_id, file_name in enumerate(os.listdir(folder_loc)):
             file_path = os.path.join(folder_loc, file_name)
-            full_clip, sr = librosa.load(file_path)
 
-            log.info("Loaded clip: {} ({})".format(
-                file_path, timedelta(seconds=get_duration(full_clip, sr))))
+            all_files.append({
+                "book_id": book_id,
+                "reader_url": meta["reader_url"],
+                "author_id": author_id,
+                "clip_id": clip_id,
+                "file_path": file_path,
+                "time_elapsed": timedelta(hours=0, minutes=0, seconds=0),
+                "elapsed": False
+            })
 
-            log.debug("Splitting clips!")
-            split_clips = audio_splitter_upper(
-                full_clip, args.max_clip_len, sr)
-            log.debug("Splitting clips done: {} splits made".format(
-                len(split_clips)))
+    current_time = timedelta(hours=0, minutes=0, seconds=0)
 
-            for split_idx, clip in enumerate(split_clips):
-                # set to target sample rate
-                clip = librosa.resample(clip, sr, args.sample_rate)
-                clip_len = timedelta(seconds=get_duration(clip, sr=sr))
-                current_time += clip_len
-
-                split_clip_id = "{}_{}_{}".format(book_id, clip_id, split_idx)
-
-                dest_path = os.path.join(
-                    output_dir, "{}.wav".format(split_clip_id))
-
-                log.debug("Saving clip to {}. Total Time :{}".format(
-                    dest_path, current_time))
-
-                # write into wav
-                librosa.output.write_wav(dest_path, clip, args.sample_rate)
-
-                if current_time >= max_time:
-                    break
-
-            if current_time >= max_time:
-                break
-
-        if current_time >= max_time:
+    # keep going until we reach the time we want
+    while current_time < max_time:
+        time_saved = get_next_clip(all_files)
+        if time_saved is None:
             break
+        else:
+            current_time += time_saved
 
     log.info("Total length: {}".format(current_time))
-
-    meta_path = os.path.join(args.metadata, "{}.json".format(language))
-    log.info("Saving metadata to {}".format(meta_path))
-
-    with codecs.open(meta_path, "w", "utf-8") as writer:
-        json.dump(meta, writer)
 
 
 def read_urls(folder):
@@ -178,6 +284,9 @@ def read_urls(folder):
 
 
 if __name__ == '__main__':
+    random.seed(42)
+    np.random.seed(42)
+
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -201,10 +310,18 @@ if __name__ == '__main__':
 
     log.info("Max Time: {}".format(max_time))
 
+    # skip_langs = ["Arabic", "Balinese", "Bulgarian", "Chinese",
+    #               "Danish", "Dutch", "English", "Esperanto", "Finnish", "French",
+    #               "German", "Greek", "Hebrew", "Hungarian", "Indonesian", "Italian",
+    #               "Japanese", "Korean", "Latin", "Latvian", "Multilingual", "Portuguese", "Russian",
+    #               "Spanish", "Sudanese", "Swedish"]
     for lang in urls:
+        if lang in skip_langs:
+            log.info("Skipping lang: {}".format(lang))
+            continue
         output_dir = os.path.join(args.output, lang)
         mkdir(output_dir)
         download_books(lang, output_dir, args.temp_dir,
                        urls[lang], max_time, args)
 
-    clear_dir(temp_dir)
+    # clear_dir(temp_dir)

@@ -20,6 +20,7 @@ class AudioDataset(Dataset):
         self.root_dir = root_dir
         self.cache = cache
         self.cache_dir = cache_dir
+        self.sample_rate = sample_rate
         if self.cache:
             self.transforms_str = str(transforms)
             log.info("Caching is enabled! Cache dir is : {}".format(self.cache_dir))
@@ -54,7 +55,7 @@ class AudioDataset(Dataset):
 
     def _load(self, idx):
         _, aud_path = self.data[idx]
-        sound, sample_rate = librosa.load(aud_path)
+        sound, sample_rate = librosa.load(aud_path, self.sample_rate)
         if self.transforms:
             sound = self.transforms(sound)
         return sound
