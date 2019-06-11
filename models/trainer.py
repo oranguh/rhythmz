@@ -28,6 +28,11 @@ class Trainer:
     def __init__(self, args):
 
         self.features = args.features
+        self.num_workers = args.num_workers
+        self.batch_size = args.batch_size
+        self.n_epochs = args.epochs
+        self.results_path = args.results_path
+        self.model_id = args.model_id
 
         sets = {"train", "val", "test"}
 
@@ -37,7 +42,7 @@ class Trainer:
         for s in sets:
             self.datasets[s] = get_dataset(s, self.features)
             self.dataloaders[s] = DataLoader(
-                self.datasets[s], batch_size=args.batch_size)
+                self.datasets[s], batch_size=self.batch_size, num_workers=self.num_workers)
 
         self.device = torch.device(args.device)
 
@@ -46,10 +51,7 @@ class Trainer:
 
         self.clf = self.clf.to(self.device)
 
-        self.n_epochs = args.epochs
-        self.results_path = args.results_path
         mkdir(self.results_path)
-        self.model_id = args.model_id
 
         self.criterion = CrossEntropyLoss().to(self.device)
 

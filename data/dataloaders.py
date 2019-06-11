@@ -83,13 +83,16 @@ def get_dataset(split, features):
 class LibrivoxDataset(Dataset):
     ROOT_PATH = "./datasets/librivox_splits/"
 
-    def __init__(self, split, transforms=None):
+    def __init__(self, split, transforms=None, padding="wrap"):
+        # TODO: repeat
+        assert padding in {"wrap"}
         self.transforms = transforms
         self.path = os.path.join(self.ROOT_PATH, split)
         self.class_to_idx = {}
         classes = sorted(os.listdir(self.path))
         self.class_to_idx = {cl: idx for (idx, cl) in enumerate(classes)}
         self.n_classes = len(classes)
+        self.padding = padding
         self.data = []
         for cl in self.class_to_idx:
             count = 0
@@ -105,7 +108,14 @@ class LibrivoxDataset(Dataset):
         sound, sample_rate = librosa.load(aud_path, sr=None)
         if self.transforms:
             sound = self.transforms(sound)
-        return sound
+        return self.pad_audio(sound)
+
+    def pad_audio(self, sound, length=80000):
+        if sound.shape[0] == length:
+            return sound
+
+        if self.padding == "wrap":
+            return np.pad(sound, (0, length-sound.shape[0]), "wrap")
 
     def __getitem__(self, idx):
         cl, aud_path = self.data[idx]

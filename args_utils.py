@@ -16,6 +16,8 @@ def add_train_args(parser):
                         type=str, required=True, help="id of the experiment")
     parser.add_argument("--device", type=str, default="cpu",
                         help="device to train model on")
+    parser.add_argument("--num-workers", type=int, default=4,
+                        help="num workers to load data")
 
 
 def get_argparser():
