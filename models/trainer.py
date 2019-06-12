@@ -41,8 +41,10 @@ class Trainer:
         self.dataset_sizes = {}
         for s in sets:
             self.datasets[s] = get_dataset(s, self.features)
+            self.dataset_sizes[s] = len(self.datasets[s])
             self.dataloaders[s] = DataLoader(
-                self.datasets[s], batch_size=self.batch_size, num_workers=self.num_workers)
+                self.datasets[s], batch_size=self.batch_size,
+                shuffle=True, num_workers=self.num_workers)
 
         self.device = torch.device(args.device)
 
@@ -72,6 +74,7 @@ class Trainer:
         correct = 0
         total = 0
 
+        total_batches = (self.dataset_sizes[split] // self.batch_size) + 1
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
             x = x.to(self.device)
             y = y.to(self.device)
@@ -80,11 +83,13 @@ class Trainer:
 
             with torch.set_grad_enabled(split == "train"):
                 output = self.clf(x)
-                loss = self.criterion(output, y.argmax(1))
-                cm.add_many(y.argmax(1).detach().cpu().numpy(),
-                            output.argmax(1).detach().cpu().numpy())
+                loss = self.criterion(output, y.view(-1))
 
-                correct += (y.argmax(1) == output.argmax(1)).sum().item()
+                y_pred = torch.softmax(output,
+                                       dim=1).argmax(1)
+                cm.add_many(y.view(-1).cpu().numpy(),
+                            y_pred.detach().cpu().numpy())
+                correct += (y.view(-1) == y_pred).sum().item()
                 total += len(x)
 
             if split == "train":
@@ -92,10 +97,13 @@ class Trainer:
                 optimizer.step()
 
             if batch_idx % 10 == 0:
-                log.info("{}: Loss: {}, Accuracy: {}".format(
-                    batch_idx, loss.item(), correct/total))
+                log.info(
+                    f"{batch_idx}/{total_batches}: Loss: {loss}, Accuracy: {correct/total}")
                 correct = 0
                 total = 0
+
+            # if batch_idx == 25:
+            #     break
 
             # get un-normalized loss
             batch_loss = loss.item() * len(x)
