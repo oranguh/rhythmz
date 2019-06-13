@@ -3,7 +3,7 @@ import argparse
 
 def add_train_args(parser):
     parser.add_argument("--features", type=str,
-                        choices=["mel-spectogram", "raw"],
+                        choices=["ms", "raw"],
                         required=True,
                         help="the features to use for training the network")
     parser.add_argument("--batch-size", dest="batch_size",
@@ -59,7 +59,7 @@ def get_argparser():
     parser_stats.add_argument("--sample-rate", required=True,
                               help="sample rate of the audio", type=int, dest="sample_rate")
     parser_stats.add_argument("--features", type=str,
-                              choices=["mel-spectogram", "raw"],
+                              choices=["ms", "raw"],
                               required=True,
                               help="the features to use for training the network")
 

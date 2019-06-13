@@ -80,8 +80,9 @@ class Trainer:
 
             if self.features == "raw":
                 x = x.view(x.size(0), -1)
-            elif self.features == "mel-spectogram":
+            elif self.features == "ms":
                 x = x.unsqueeze(1)
+
 
             y = y.to(self.device)
             if split == "train":

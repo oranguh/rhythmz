@@ -35,7 +35,7 @@ def get_feature_layers(features):
         index = add_vgg_conv_block(index, layers, 32, 64, 3, 4)
         index = add_vgg_conv_block(index, layers, 64, 32, 2, 4)
 
-    elif features == "mel-spectogram":
+    elif features == "ms":
         layers = OrderedDict()
 
         layers["conv_1"] = nn.Conv2d(
@@ -69,7 +69,7 @@ class LibrivoxAudioClassifier(nn.Module):
     def __init__(self, features, n_classes, device):
         super().__init__()
 
-        assert features in {"mel-spectogram", "raw"}
+        assert features in {"ms", "raw"}
         self.n_classes = n_classes
         self.features = features
         self.device = device

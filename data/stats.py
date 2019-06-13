@@ -1,7 +1,6 @@
 import os
 import logging
 
-from data.dataloaders import AudioDataset
 from data.transforms import MelSpectogram
 
 log = logging.getLogger(__name__)
