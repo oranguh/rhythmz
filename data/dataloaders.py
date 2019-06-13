@@ -14,7 +14,7 @@ from data.transforms import MelSpectogram, StdScaler, Compose
 log = logging.getLogger(__name__)
 
 
-def get_dataset(split, features):
+def get_dataset(rhythm, split, features):
     if features == "raw":
         transforms = None
         cache = False
@@ -22,17 +22,23 @@ def get_dataset(split, features):
         transforms = Compose([MelSpectogram(8000)])
         cache = True
     log.info("Transforms: {}".format(transforms))
-    return LibrivoxDataset(split, transforms=transforms, cache=cache)
+    return LibrivoxDataset(split, rhythm, transforms=transforms, cache=cache)
 
 
 class LibrivoxDataset(Dataset):
     ROOT_PATH = "./datasets/librivox_splits/"
+    ROOT_PATH_RHYTHM = "./datasets/rhythm_librivox_splits/"
 
-    def __init__(self, split, transforms=None, padding="wrap", cache=False, cache_dir="./cache"):
+    def __init__(self, split, rhythm, transforms=None, padding="wrap", cache=False, cache_dir="./cache",):
         # TODO: repeat
         assert padding in {"wrap"}
         self.transforms = transforms
-        self.path = os.path.join(self.ROOT_PATH, split)
+        root_path = {
+            False: self.ROOT_PATH,
+            True: self.ROOT_PATH_RHYTHM
+        }[rhythm]
+        log.info("Data root path: {}".format(root_path))
+        self.path = os.path.join(root_path, split)
         self.class_to_idx = {}
         classes = sorted(os.listdir(self.path))
         self.class_to_idx = {cl: idx for (idx, cl) in enumerate(classes)}

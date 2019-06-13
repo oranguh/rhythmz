@@ -40,7 +40,7 @@ class Trainer:
         self.dataloaders = {}
         self.dataset_sizes = {}
         for s in sets:
-            self.datasets[s] = get_dataset(s, self.features)
+            self.datasets[s] = get_dataset(not args.audio, s, self.features)
             self.dataset_sizes[s] = len(self.datasets[s])
             self.dataloaders[s] = DataLoader(
                 self.datasets[s], batch_size=self.batch_size,
@@ -82,7 +82,6 @@ class Trainer:
                 x = x.view(x.size(0), -1)
             elif self.features == "ms":
                 x = x.unsqueeze(1)
-
 
             y = y.to(self.device)
             if split == "train":

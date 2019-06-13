@@ -6,6 +6,8 @@ def add_train_args(parser):
                         choices=["ms", "raw"],
                         required=True,
                         help="the features to use for training the network")
+    parser.add_argument("--audio", default=False, action="store_true",
+                        help="if set, use raw audio instead of rhythm data")
     parser.add_argument("--batch-size", dest="batch_size",
                         type=int, default=32, help="batch size for training")
     parser.add_argument("--epochs", type=int, default=30,
@@ -52,15 +54,5 @@ def get_argparser():
     parser_train.add_argument(
         "--test", action="store_true", help="flag to test the model")
     add_train_args(parser_train)
-
-    parser_stats = subparsers.add_parser("compute-mean", help="compute mean")
-    parser_stats.add_argument("--data", dest="data",
-                              type=str, required=True, help="location of input data")
-    parser_stats.add_argument("--sample-rate", required=True,
-                              help="sample rate of the audio", type=int, dest="sample_rate")
-    parser_stats.add_argument("--features", type=str,
-                              choices=["ms", "raw"],
-                              required=True,
-                              help="the features to use for training the network")
 
     return parser
