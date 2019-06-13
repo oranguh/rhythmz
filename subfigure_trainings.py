@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import os
 from tqdm import tqdm
-from models.classifier import AudioClassifier
+# from models.classifier import AudioClassifier
 import torch
 import seaborn as sn
 import pandas as pd
@@ -15,22 +15,25 @@ def main():
     confusion = True
 
     all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\topCoder"
+    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\sam_norm"
     # all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\indic"
     images_path = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\images"
 
     dataset = os.path.split(all_models)[1]
-
+    confusion_title = "hello"
     y_trains = []
     y_vals = []
     titles = []
     figure_count = 0
     for dirName, subdirList, fileList in os.walk(all_models):
-        if os.path.split(dirName)[-1] == ("confusion_matrix"):
+        # print(os.path.split(dirName)[-1])
+        if os.path.split(dirName)[-1] == "confusion_matrix":
+            # print("samasnjadn")
             for file in tqdm(fileList):
                 # continue
                 epoch = file.split("_")[0]
                 train_val = file.split("_")[1]
-                if not (int(epoch) == 49):
+                if not (int(epoch) == 29):
                     continue
                 if (train_val == "train"):
                     # continue
@@ -38,11 +41,18 @@ def main():
                 if (train_val == "val"):
                     # continue
                     pass
+                language_list = ['Arabic', 'Chinese', 'Danish', 'Dutch', 'English',
+                                 'Esperanto', 'Finnish', 'French', 'German',
+                                 'Greek', 'Hebrew', 'Italian', 'Japanese', 'Korean',
+                                 'Latin', 'Multilingual', 'Polish', 'Portuguese',
+                                 'Russian', 'Spanish', 'Swedish', 'Tagalog', 'Tamil']
+
                 if dataset == "indic":
                     language_list = ["bengali", "hindi", "kannada", "malayalam", "marathi", "tamil", "telegu"]
                 elif dataset == "topCoder":
                     language_list = ["arabic", "dutch", "hindi", "N korean", "polish", "romanian", "thai", "vietnamese"]
                 confusion_title = os.path.split(os.path.split(dirName)[0])[1]
+
                 confusion_matrix = np.load(os.path.join(dirName, file))
                 # print(type(confusion_matrix))
                 # print(confusion_matrix[()][(2, 3)])
@@ -60,20 +70,17 @@ def main():
                     figure_count += 1
 
                     # sn.set(font_scale=1.4)#for label size
-                    sn.heatmap(df_cm, annot=True,annot_kws={"size": 16}, fmt='g')# font size
+                    sn.heatmap(df_cm, annot=True,annot_kws={"size": 8}, fmt='g')# font size
                     savefile = "{}_{}_matrix".format(train_val, confusion_title) + ".png"
                     savefile = os.path.join(images_path, savefile)
                     plt.savefig(savefile, bbox_inches='tight')
 
                 if boxplot:
-                    if dataset == "indic":
-                        df = pd.DataFrame(columns=language_list,
-                                    data = confusion_real_matrix.T,
-                                    index=language_list)
-                    if dataset == "topCoder":
-                        df = pd.DataFrame(columns=language_list,
-                                    data = confusion_real_matrix.T,
-                                    index=language_list)
+
+                    df = pd.DataFrame(columns=language_list,
+                                data = confusion_real_matrix.T,
+                                index=language_list)
+
                     # plt.figure(figure_count)
                     # figure_count += 1
                     # color = ['turquoise', 'darkgreen', 'tomato', 'indianred', 'forestgreen', 'sienna', 'darkorange']
