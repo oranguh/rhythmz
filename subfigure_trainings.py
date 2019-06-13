@@ -14,10 +14,14 @@ def main():
     boxplot = True
     confusion = True
 
-    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\topCoder"
-    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\sam_norm"
-    # all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\indic"
-    images_path = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\images"
+    folder_name = "sam2"
+    all_models = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\results\\" + folder_name
+    images_path = "C:\\Users\\murco.DESKTOP-R324UUU\\Documents\\rhythmz\\images\\" + folder_name
+    try:
+        os.mkdir(images_path)
+        print("Directory ", images_path, " Created ")
+    except FileExistsError:
+        print("Directory ", images_path, " already exists")
 
     dataset = os.path.split(all_models)[1]
     confusion_title = "hello"

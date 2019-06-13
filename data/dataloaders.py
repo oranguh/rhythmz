@@ -80,7 +80,6 @@ class LibrivoxDataset(Dataset):
                 (self.transforms_str + aud_path).encode()).hexdigest()
             cache_path = os.path.join(self.cache_dir, _id) + ".npy"
             if os.path.exists(cache_path):
-                print("yay for caching")
                 sound = np.load(cache_path)
             else:
                 sound = self._load_clip(idx)
