@@ -10,6 +10,10 @@ def add_train_args(parser):
                         help="if set, use raw audio instead of rhythm data")
     parser.add_argument("--batch-size", dest="batch_size",
                         type=int, default=32, help="batch size for training")
+    parser.add_argument("--learning-rate", dest="learning_rate",
+                        type=float, default=1e-3, help="learning rate")
+    parser.add_argument("--batch-norm", dest="batch_norm",
+                        action="store_true", default=False, help="(flag) use BN in features")
     parser.add_argument("--epochs", type=int, default=30,
                         help="batch size for training")
     parser.add_argument("--results-path", dest="results_path", type=str,

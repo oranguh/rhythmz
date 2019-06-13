@@ -33,6 +33,8 @@ class Trainer:
         self.n_epochs = args.epochs
         self.results_path = args.results_path
         self.model_id = args.model_id
+        self.learning_rate = args.learning_rate
+        self.batch_norm = args.batch_norm
 
         sets = {"train", "val", "test"}
 
@@ -49,7 +51,7 @@ class Trainer:
         self.device = torch.device(args.device)
 
         self.clf = classifier.LibrivoxAudioClassifier(
-            args.features, self.datasets["train"].n_classes, self.device)
+            self.features, self.datasets["train"].n_classes, self.device, self.batch_norm)
 
         self.clf = self.clf.to(self.device)
 
@@ -136,7 +138,7 @@ class Trainer:
         cm_path = os.path.join(model_path, "confusion_matrix")
         mkdir(cm_path)
 
-        optimizer = Adam(self.clf.parameters(), weight_decay=1/(200*9))
+        optimizer = Adam(self.clf.parameters(), lr=self.learning_rate)
 
         best_val_score = 0
         best_model = self.clf.state_dict()

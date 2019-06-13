@@ -70,15 +70,13 @@ def generate_cmd(hyperparameters):
         model_id = []
         run_name = None
         for arg, value in choice.items():
-            cmd.append("--{}".format(arg))
-            cmd.append(str(value))
-            # only include the file name in the model id
-            if arg == "prior":
-                value = os.path.split(value)[1].split(".")[0]
-            # adding run name is redundant
-            if arg == "run":
-                run_name = value
-                continue
+            # if value is a boolean, then it is a flag
+            if value in {True, False}:
+                if value:
+                    cmd.append("--{}".format(arg))
+            else:
+                cmd.append("--{}".format(arg))
+                cmd.append(str(value))
 
             # don't add to model-id if there's only a single choice to be made
             if arg_choices[arg] <= 1:
@@ -99,8 +97,8 @@ def execute_cmd(cmd, suppress_output=False):
     stdout, stderr = None, None
     if suppress_output:
         stdout, stderr = subprocess.DEVNULL, subprocess.DEVNULL
-    return_code = subprocess.call(cmd, stderr=stderr,
-                                  stdout=stdout)
+    # return_code = subprocess.call(cmd, stderr=stderr,
+    #                               stdout=stdout)
     time_elapsed = time.time() - start_time
     log.info("Finished executing command: {} , Took {:.0f}m {:.0f}s".format(" ".join(cmd),
                                                                             time_elapsed // 60, time_elapsed % 60))
