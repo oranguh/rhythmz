@@ -77,10 +77,7 @@ class LibrivoxAudioClassifier(nn.Module):
         layers = get_feature_layers(self.features)
 
         self.layers = nn.Sequential(layers)
-        if self.features == "raw":
-            self.feature_size = 128
-        else:
-            self.feature_size = None
+        self.feature_size = 128
 
         log.info("Feature Size: {}".format(self.feature_size))
 

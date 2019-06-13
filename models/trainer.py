@@ -77,6 +77,12 @@ class Trainer:
         total_batches = (self.dataset_sizes[split] // self.batch_size) + 1
         for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
             x = x.to(self.device)
+
+            if self.features == "raw":
+                x = x.view(x.size(0), -1)
+            elif self.features == "mel-spectogram":
+                x = x.unsqueeze(1)
+
             y = y.to(self.device)
             if split == "train":
                 optimizer.zero_grad()
