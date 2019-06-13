@@ -106,9 +106,12 @@ class LibrivoxDataset(Dataset):
         _, aud_path = self.data[idx]
         # set sr=None to load the clip with proper sr
         sound, sample_rate = librosa.load(aud_path, sr=None)
+        sound = self.pad_audio(sound)
+
         if self.transforms:
             sound = self.transforms(sound)
-        return self.pad_audio(sound)
+
+        return sound
 
     def pad_audio(self, sound, length=80000):
         if sound.shape[0] == length:
@@ -121,7 +124,7 @@ class LibrivoxDataset(Dataset):
         cl, aud_path = self.data[idx]
         cl = self.class_to_idx[cl]
         # reshape to 1 channel for easier conv operations
-        return torch.FloatTensor(self._load(idx)).view(1, -1), torch.LongTensor([cl])
+        return torch.FloatTensor(self._load(idx)), torch.LongTensor([cl])
 
     def __len__(self):
         return len(self.data)
