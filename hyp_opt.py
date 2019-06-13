@@ -97,8 +97,8 @@ def execute_cmd(cmd, suppress_output=False):
     stdout, stderr = None, None
     if suppress_output:
         stdout, stderr = subprocess.DEVNULL, subprocess.DEVNULL
-    # return_code = subprocess.call(cmd, stderr=stderr,
-    #                               stdout=stdout)
+    return_code = subprocess.call(cmd, stderr=stderr,
+                                  stdout=stdout)
     time_elapsed = time.time() - start_time
     log.info("Finished executing command: {} , Took {:.0f}m {:.0f}s".format(" ".join(cmd),
                                                                             time_elapsed // 60, time_elapsed % 60))
