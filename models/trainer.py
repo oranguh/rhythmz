@@ -81,7 +81,7 @@ class Trainer:
             x = x.to(self.device)
 
             if self.features == "raw":
-                x = x.view(x.size(0), -1)
+                x = x.unsqueeze(1)
             elif self.features == "ms":
                 x = x.unsqueeze(1)
 
