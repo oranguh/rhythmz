@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 
 import torch
@@ -10,19 +11,31 @@ from args_utils import get_argparser
 from data.stats import ComputeMean
 
 
-if __name__ == '__main__':
+def configure_logging(module, verbose):
+    handlers = [
+        RotatingFileHandler(
+            "logs/{}.log".format(module), maxBytes=1048576*5, backupCount=7),
+        logging.StreamHandler()
+    ]
+    log_format = "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
+    if verbose:
+        logging.basicConfig(level=logging.DEBUG,
+                            handlers=handlers, format=log_format)
+    else:
+        logging.basicConfig(level=logging.INFO,
+                            handlers=handlers, format=log_format)
 
-    log = logging.getLogger("rhythm")
+
+if __name__ == '__main__':
 
     args = get_argparser().parse_args()
 
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
+    log = logging.getLogger("rhythm")
 
     if args.module is None:
         raise ValueError("Provide a module argument (see --help)")
+
+    configure_logging(args.module, args.verbose)
 
     # seed for reproducability
     torch.manual_seed(args.seed)

@@ -1,0 +1,10 @@
+{
+    "batch-size": [
+        2,
+        4
+    ],
+    "features": [
+        "raw",
+        "ms"
+    ]
+}
