@@ -45,10 +45,10 @@ def main():
                 if (train_val == "val"):
                     # continue
                     pass
-                language_list = ['Arabic', 'Chinese', 'Danish', 'Dutch', 'English',
+                language_list = ['Chinese', 'Danish', 'Dutch', 'English',
                                  'Esperanto', 'Finnish', 'French', 'German',
                                  'Greek', 'Hebrew', 'Italian', 'Japanese', 'Korean',
-                                 'Latin', 'Multilingual', 'Polish', 'Portuguese',
+                                 'Latin', 'Polish', 'Portuguese',
                                  'Russian', 'Spanish', 'Swedish', 'Tagalog', 'Tamil']
 
                 if dataset == "indic":

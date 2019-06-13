@@ -156,8 +156,7 @@ class Trainer:
                 cm_path, "{}_train_metrics".format(epoch)), cm_train)
             np.save(os.path.join(
                 cm_path, "{}_val_metrics".format(epoch)), cm_val)
-
-            val_score = val_metrics["micro avg"]["f1-score"]
+            val_score = val_metrics["macro avg"]["f1-score"]
             if best_val_score < val_score:
                 log.info("Validation Score {} exceeds best score of {}. Saving new best model".format(
                     val_score, best_val_score))
