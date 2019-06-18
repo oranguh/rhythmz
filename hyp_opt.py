@@ -15,7 +15,7 @@ import numpy as np
 # PROC_PREFIX_DAS4_CPU = "srun --time=99:00:00".split()
 PROC_PREFIX_CPU = []
 PROC_FILE = "python rhythm.py train".split()
-
+PROC_PREFIX_LISA = "srun -p gpu --time=99:00:00".split()
 
 log = logging.getLogger("hyp_opt")
 
@@ -36,11 +36,6 @@ def configure_logging(module, verbose):
 
 
 def _is_trained(run_name, model_id):
-    # try:
-    #     args, monitor = read_monitor_args(run_name, model_id)
-    #     # we can say a model is trained if the tracked epochs == number of epochs in the run
-    #     return args["epochs"] == len(monitor["epoch_val_loss"])
-    # except FileNotFoundError:
     return False
 
 
