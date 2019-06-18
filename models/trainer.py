@@ -11,14 +11,7 @@ from torch.nn.modules.loss import CrossEntropyLoss
 from models import evaluate
 from models import classifier
 from utils.common import mkdir
-from data.dataloaders import get_dataset
-
-
-def collate_fn(batch):
-    data = [item[0].squeeze() for item in batch]
-    target = [item[1] for item in batch]
-    target = torch.LongTensor(target)
-    return [data, target]
+from data.dataloaders import get_dataset, LibrivoxDataset
 
 
 log = logging.getLogger(__name__)
@@ -46,7 +39,8 @@ class Trainer:
             self.dataset_sizes[s] = len(self.datasets[s])
             self.dataloaders[s] = DataLoader(
                 self.datasets[s], batch_size=self.batch_size,
-                shuffle=True, num_workers=self.num_workers)
+                shuffle=True, num_workers=self.num_workers,
+                collate_fn=LibrivoxDataset.collate_fn)
 
         self.device = torch.device(args.device)
 
@@ -77,7 +71,7 @@ class Trainer:
         total = 0
 
         total_batches = (self.dataset_sizes[split] // self.batch_size) + 1
-        for batch_idx, (x, y) in enumerate(self.dataloaders[split], 1):
+        for batch_idx, (x, y, meta) in enumerate(self.dataloaders[split], 1):
             x = x.to(self.device)
 
             if self.features == "raw":

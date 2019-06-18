@@ -30,7 +30,7 @@ def get_argparser():
     parser = argparse.ArgumentParser(description='TODO')
     parser.add_argument('--verbose', dest='verbose', default=False,
                         action='store_true', help="set to true for verbose output")
-    parser.add_argument('--seed', dest="seed", required=False,
+    parser.add_argument('--seed', dest="seed", required=False, type=int,
                         default=42, help="random seed")
 
     subparsers = parser.add_subparsers(dest='module', help='module to run')

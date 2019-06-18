@@ -184,6 +184,8 @@ def download_books(language, output_dir, temp_dir, url_list, max_time, args):
         with codecs.open(meta_path, "w", "utf-8") as writer:
             json.dump(metadata, writer)
 
+    return
+
     authors = set(meta["reader_url"] for meta in metadata)
     log.info("Language {} has {} authors".format(language, len(authors)))
     if len(authors) < args.min_authors:
@@ -310,6 +312,7 @@ if __name__ == '__main__':
 
     log.info("Max Time: {}".format(max_time))
 
+    skip_langs = []
     # skip_langs = ["Arabic", "Balinese", "Bulgarian", "Chinese",
     #               "Danish", "Dutch", "English", "Esperanto", "Finnish", "French",
     #               "German", "Greek", "Hebrew", "Hungarian", "Indonesian", "Italian",

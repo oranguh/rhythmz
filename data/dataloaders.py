@@ -1,4 +1,5 @@
 import os
+import json
 import random
 import logging
 import hashlib
@@ -28,6 +29,16 @@ def get_dataset(rhythm, split, features):
 class LibrivoxDataset(Dataset):
     ROOT_PATH = "./datasets/librivox_splits/"
     ROOT_PATH_RHYTHM = "./datasets/rhythm_librivox_splits/"
+    METADATA_PATH = "./datasets/librivox_metadata"
+
+    @staticmethod
+    def collate_fn(batch):
+        data, target, meta = [], [], []
+        for d, t, m in batch:
+            data.append(d)
+            target.append(t)
+            meta.append(m)
+        return [torch.stack(data), torch.stack(target), meta]
 
     def __init__(self, split, rhythm, transforms=None, padding="wrap", cache=False, cache_dir="./cache",):
         # TODO: repeat
@@ -61,6 +72,8 @@ class LibrivoxDataset(Dataset):
             log.info("Caching is enabled! Cache dir is : {}".format(self.cache_dir))
             common.mkdir(self.cache_dir)
 
+        self._load_metadata()
+
     def _load_clip(self, idx):
         _, aud_path = self.data[idx]
         # set sr=None to load the clip with proper sr
@@ -72,6 +85,30 @@ class LibrivoxDataset(Dataset):
 
         return sound
 
+    def _load_metadata(self):
+        self.metadata = {}
+        for cl in self.class_to_idx:
+            with open(os.path.join(self.METADATA_PATH, cl + ".json")) as reader:
+                meta = json.load(reader)
+                # make meta a dict with book_id as key
+                self.metadata[cl] = {m["book_id"]: m for m in meta}
+
+        log.info("Finished loading metadata!")
+
+    def _get_meta(self, idx):
+        language, aud_path = self.data[idx]
+        file_name = os.path.split(aud_path)[1]
+        book_id = file_name.split("_")[0]
+
+        m = self.metadata[language][book_id]
+
+        return {
+            "book_id": book_id,
+            "author_id": m["reader_url"],
+            "language": language,
+            "path": aud_path
+        }
+
     def _load(self, idx):
         _, aud_path = self.data[idx]
 
@@ -80,7 +117,6 @@ class LibrivoxDataset(Dataset):
                 (self.transforms_str + aud_path).encode()).hexdigest()
             cache_path = os.path.join(self.cache_dir, _id) + ".npy"
             if os.path.exists(cache_path):
-                print("yay for caching")
                 sound = np.load(cache_path)
             else:
                 sound = self._load_clip(idx)
@@ -98,10 +134,10 @@ class LibrivoxDataset(Dataset):
             return np.pad(sound, (0, length-sound.shape[0]), "wrap")
 
     def __getitem__(self, idx):
+        meta = self._get_meta(idx)
         cl, aud_path = self.data[idx]
         cl = self.class_to_idx[cl]
-        # reshape to 1 channel for easier conv operations
-        return torch.FloatTensor(self._load(idx)), torch.LongTensor([cl])
+        return torch.FloatTensor(self._load(idx)), torch.LongTensor([cl]), meta
 
     def __len__(self):
         return len(self.data)
