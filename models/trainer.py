@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import logging
 import numpy as np
@@ -152,12 +153,21 @@ class Trainer:
                 torch.save(best_model, os.path.join(
                     model_path, "best_model.pkl"))
 
+        self.examine("train")
+        self.examine("val")
+
     def examine(self, split):
-        n_points = 500  # self.dataset_sizes[split]
+        n_points = self.dataset_sizes[split]
         diag = diag_classifier.DiagnosticClassifier(
             self.dataloaders[split], self.clf, self.clf.feature_size, {"author_id",
                                                                        "book_id"}, n_points)
-        diag.run()
+        diag_results = diag.run()
+
+        path = os.path.join(self.results_path, self.model_id,
+                            f"diag_{split}_results.json")
+
+        with open(path, "w") as writer:
+            json.dump(diag_results, writer)
 
     def load(self, map_location="cpu"):
         model_path = os.path.join(
@@ -169,4 +179,4 @@ class Trainer:
     def test(self):
         self.clf = self.clf.to(self.device)
         self.examine("test")
-        self.train_epoch(epoch, None, "val")
+        self.train_epoch(0, None, "val")
