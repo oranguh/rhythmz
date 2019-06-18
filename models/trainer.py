@@ -11,6 +11,7 @@ from torch.nn.modules.loss import CrossEntropyLoss
 from models import evaluate
 from models import classifier
 from utils.common import mkdir
+from models import diag_classifier
 from data.dataloaders import get_dataset, LibrivoxDataset
 
 
@@ -73,12 +74,6 @@ class Trainer:
         total_batches = (self.dataset_sizes[split] // self.batch_size) + 1
         for batch_idx, (x, y, meta) in enumerate(self.dataloaders[split], 1):
             x = x.to(self.device)
-
-            if self.features == "raw":
-                x = x.unsqueeze(1)
-            elif self.features == "ms":
-                x = x.unsqueeze(1)
-
             y = y.to(self.device)
             if split == "train":
                 optimizer.zero_grad()
@@ -103,9 +98,6 @@ class Trainer:
                     f"{batch_idx}/{total_batches}: Loss: {loss}, Accuracy: {correct/total}")
                 correct = 0
                 total = 0
-
-            # if batch_idx == 25:
-            #     break
 
             # get un-normalized loss
             batch_loss = loss.item() * len(x)
@@ -160,10 +152,21 @@ class Trainer:
                 torch.save(best_model, os.path.join(
                     model_path, "best_model.pkl"))
 
-    def load(self):
-        model_path = os.path.join(self.results_path, self.model_id)
-        self.clf.load_state_dict(torch.load(model_path))
+    def examine(self, split):
+        n_points = 500  # self.dataset_sizes[split]
+        diag = diag_classifier.DiagnosticClassifier(
+            self.dataloaders[split], self.clf, self.clf.feature_size, {"author_id",
+                                                                       "book_id"}, n_points)
+        diag.run()
 
-    def test():
+    def load(self, map_location="cpu"):
+        model_path = os.path.join(
+            self.results_path, self.model_id, "best_model.pkl")
+        state_dict = torch.load(
+            model_path, map_location=map_location)
+        self.clf.load_state_dict(state_dict)
+
+    def test(self):
         self.clf = self.clf.to(self.device)
-        self.train_epoch(0, "test")
+        self.examine("test")
+        self.train_epoch(epoch, None, "val")

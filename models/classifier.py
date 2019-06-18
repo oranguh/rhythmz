@@ -102,7 +102,8 @@ class LibrivoxAudioClassifier(nn.Module):
 
         log.info("Created model : {}".format(self))
 
+    def get_features(self, x):
+        return self.layers(x).view(x.size(0), -1)
+
     def forward(self, x):
-        features = self.layers(x)
-        features = features.view(x.size(0), -1)
-        return self.classifier(features)
+        return self.classifier(self.get_features(x))

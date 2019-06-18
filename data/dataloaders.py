@@ -38,7 +38,7 @@ class LibrivoxDataset(Dataset):
             data.append(d)
             target.append(t)
             meta.append(m)
-        return [torch.stack(data), torch.stack(target), meta]
+        return [torch.stack(data).unsqueeze(1), torch.stack(target), meta]
 
     def __init__(self, split, rhythm, transforms=None, padding="wrap", cache=False, cache_dir="./cache",):
         # TODO: repeat
