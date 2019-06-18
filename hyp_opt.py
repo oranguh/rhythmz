@@ -16,6 +16,7 @@ import numpy as np
 PROC_PREFIX_CPU = []
 PROC_FILE = "python rhythm.py train".split()
 PROC_PREFIX_LISA = "srun -p gpu --time=99:00:00".split()
+PROC_PREFIX_LISA_SHARED = "srun -p gpu_shared --time=10:00:00".split()
 
 log = logging.getLogger("hyp_opt")
 
@@ -105,7 +106,7 @@ if __name__ == '__main__':
         "hyp_opt", description="Searches over hyperparameters")
     parser.add_argument(
         "--run-loc", dest="run_location",
-        default="cpu", choices={"cpu"},
+        default="cpu", choices={"cpu", "lisa", "lisa-shared"},
         help="location to run processes")
     parser.add_argument("--n-jobs", dest="n_jobs", type=int,
                         help="number of jobs to run in parallel", required=True)
@@ -117,7 +118,9 @@ if __name__ == '__main__':
     configure_logging("hyp_opt", True)
 
     PROC_PREFIX = {
-        "cpu": PROC_PREFIX_CPU
+        "cpu": PROC_PREFIX_CPU,
+        "lisa": PROC_PREFIX_LISA,
+        "lisa-shared": PROC_PREFIX_LISA_SHARED
     }[args.run_location]
 
     log.info("PROC_PREFIX: {}".format(PROC_PREFIX))
