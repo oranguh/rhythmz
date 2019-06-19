@@ -36,11 +36,19 @@ def configure_logging(module, verbose):
                             handlers=handlers, format=log_format)
 
 
-def _is_trained(run_name, model_id):
-    return False
+def _is_trained(run_name, model_id, epochs):
+    try:
+        path = os.path.join("results", model_id, "epochs")
+        files = os.listdir(path)
+        files = max(files, key=lambda _: int(_.split("_")[0]))
+        files = int(files.split("_")[0])
+
+        return (files+1) == (epochs)
+    except FileNotFoundError:
+        return False
 
 
-def generate_cmd(hyperparameters):
+def generate_cmd(hyperparameters, epochs):
     hyperparameters = OrderedDict(
         sorted(hyperparameters.items(), key=lambda _: _[0]))
     keys = list(hyperparameters.keys())
@@ -84,7 +92,7 @@ def generate_cmd(hyperparameters):
         cmd.append("--model-id")
         cmd.append(model_id)
 
-        yield cmd, _is_trained(run_name, model_id)
+        yield cmd, _is_trained(run_name, model_id, epochs)
 
 
 def execute_cmd(cmd, suppress_output=False):
@@ -110,6 +118,8 @@ if __name__ == '__main__':
         help="location to run processes")
     parser.add_argument("--n-jobs", dest="n_jobs", type=int,
                         help="number of jobs to run in parallel", required=True)
+    parser.add_argument("--epochs", type=int, required=True,
+                        help="num of epochs - used to determine if a model is trained")
     parser.add_argument(
         "hyp_file", help="location of the JSON file specifying the hyperparameters")
 
@@ -129,7 +139,7 @@ if __name__ == '__main__':
         hyperparameters = json.load(reader)
 
     cmds_to_execute = []
-    for cmd, is_trained in generate_cmd(hyperparameters):
+    for cmd, is_trained in generate_cmd(hyperparameters, args.epochs):
         if is_trained:
             log.info("Model is already trained, skipping")
             continue
