@@ -16,7 +16,7 @@ import numpy as np
 PROC_PREFIX_CPU = []
 PROC_FILE = "python rhythm.py train".split()
 PROC_PREFIX_LISA = "srun -p gpu --time=99:00:00".split()
-PROC_PREFIX_LISA_SHARED = "srun -p gpu_shared --time=10:00:00".split()
+PROC_PREFIX_LISA_SHARED = "srun -p gpu_shared --time=99:00:00".split()
 
 log = logging.getLogger("hyp_opt")
 
