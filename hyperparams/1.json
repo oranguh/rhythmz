@@ -1,7 +1,5 @@
 {
     "batch-size": [
-        32,
-        64,
         128
     ],
     "features": [
@@ -24,7 +22,6 @@
     ],
     "learning-rate": [
         1e-2,
-        1e-3,
-        1e-4
+        1e-3
     ]
 }
