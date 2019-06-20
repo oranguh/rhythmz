@@ -7,6 +7,7 @@ import hashlib
 import torch
 import librosa
 import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset
 
 from utils import common
@@ -48,6 +49,7 @@ class LibrivoxDataset(Dataset):
             False: self.ROOT_PATH,
             True: self.ROOT_PATH_RHYTHM
         }[rhythm]
+        self.root_path = root_path
         log.info("Data root path: {}".format(root_path))
         self.path = os.path.join(root_path, split)
         self.class_to_idx = {}
@@ -74,6 +76,22 @@ class LibrivoxDataset(Dataset):
 
         self._load_metadata()
 
+    def _load_metadata(self):
+        self.metadata = {}
+        for cl in self.class_to_idx:
+            with open(os.path.join(self.METADATA_PATH, cl + ".json")) as reader:
+                meta = json.load(reader)
+                # make meta a dict with book_id as key
+                self.metadata[cl] = {m["book_id"]: m for m in meta}
+
+        log.info("Loading gender info")
+        g = pd.read_csv(os.path.join(self.root_path, "gender_annotations.csv"))
+        self.genders = {}
+        for _, row in g.iterrows():
+            self.genders[row["author_id"]] = row["gender"]
+
+        log.info("Finished loading metadata!")
+
     def _load_clip(self, idx):
         _, aud_path = self.data[idx]
         # set sr=None to load the clip with proper sr
@@ -85,16 +103,6 @@ class LibrivoxDataset(Dataset):
 
         return sound
 
-    def _load_metadata(self):
-        self.metadata = {}
-        for cl in self.class_to_idx:
-            with open(os.path.join(self.METADATA_PATH, cl + ".json")) as reader:
-                meta = json.load(reader)
-                # make meta a dict with book_id as key
-                self.metadata[cl] = {m["book_id"]: m for m in meta}
-
-        log.info("Finished loading metadata!")
-
     def _get_meta(self, idx):
         language, aud_path = self.data[idx]
         file_name = os.path.split(aud_path)[1]
@@ -105,6 +113,7 @@ class LibrivoxDataset(Dataset):
         return {
             "book_id": book_id,
             "author_id": m["reader_url"],
+            "gender": self.genders[m["reader_url"]],
             "language": language,
             "path": aud_path
         }
