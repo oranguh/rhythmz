@@ -11,12 +11,13 @@ log = logging.getLogger(__name__)
 
 
 class DiagnosticClassifier:
-    def __init__(self, dataloader, model, feature_size, meta_keys, n_points):
+    def __init__(self, dataloader, model, device, feature_size, meta_keys, n_points):
         self.dataloader = dataloader
         self.model = model
         self.meta_keys = meta_keys
         self.feature_size = feature_size
         self.n_points = n_points
+        self.device = device
 
     def build_xy(self):
         log.info("Building X, Y")
@@ -27,6 +28,7 @@ class DiagnosticClassifier:
         with torch.no_grad():
             print_freq = self.n_points // self.dataloader.batch_size
             for batch_idx, (x, y, meta) in enumerate(self.dataloader):
+                x = x.to(self.device)
                 x = self.model.get_features(x).detach().cpu().numpy()
                 X.extend(x)
 
