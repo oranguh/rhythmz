@@ -57,7 +57,7 @@ class DiagnosticClassifier:
                 X, y, test_size=0.2)
 
             log.info("{}: Fitting a logistic regression model (CV=5)".format(key))
-            clf = LogisticRegressionCV(scoring="f1_micro", cv=5, max_iter=500)
+            clf = LogisticRegressionCV(scoring="f1_micro", cv=3, max_iter=250)
             clf.fit(X_train, y_train)
 
             train_results = classification_report(
