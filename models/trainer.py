@@ -158,14 +158,14 @@ class Trainer:
 
     def examine(self, split):
         n_points = self.dataset_sizes[split]
+        meta_keys = {"author_id", "book_id", "gender"}
         diag = diag_classifier.DiagnosticClassifier(
-            self.dataloaders[split], self.clf, self.device, self.clf.feature_size, {"author_id",
-                                                                                    "book_id"}, n_points)
+            self.dataloaders[split], self.clf, self.device,
+            self.clf.feature_size, meta_keys, n_points)
         diag_results = diag.run()
 
         path = os.path.join(self.results_path, self.model_id,
                             f"diag_{split}_results.json")
-
         with open(path, "w") as writer:
             json.dump(diag_results, writer)
 
