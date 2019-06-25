@@ -29,6 +29,7 @@ class Trainer:
         self.results_path = args.results_path
         self.model_id = args.model_id
         self.learning_rate = args.learning_rate
+        self.weight_decay = args.weight_decay
         self.batch_norm = args.batch_norm
 
         sets = {"train", "val", "test"}
@@ -125,7 +126,8 @@ class Trainer:
         cm_path = os.path.join(model_path, "confusion_matrix")
         mkdir(cm_path)
 
-        optimizer = Adam(self.clf.parameters(), lr=self.learning_rate)
+        optimizer = Adam(self.clf.parameters(),
+                         lr=self.learning_rate, weight_decay=self.weight_decay)
 
         best_val_score = 0
         best_model = self.clf.state_dict()

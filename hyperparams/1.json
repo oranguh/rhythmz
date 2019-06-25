@@ -23,5 +23,8 @@
     "learning-rate": [
         1e-2,
         1e-3
+    ],
+    "weight-decay": [
+        1e-4
     ]
 }

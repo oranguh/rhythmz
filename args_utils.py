@@ -24,6 +24,8 @@ def add_train_args(parser):
                         help="device to train model on")
     parser.add_argument("--num-workers", type=int, default=4,
                         help="num workers to load data")
+    parser.add_argument("--weight-decay", dest="weight_decay", default=0,
+                        type=float, help="weight decay for Adam")
 
 
 def get_argparser():
