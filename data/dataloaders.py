@@ -3,6 +3,7 @@ import json
 import random
 import logging
 import hashlib
+from collections import defaultdict
 
 import torch
 import librosa
@@ -41,7 +42,12 @@ class LibrivoxDataset(Dataset):
             meta.append(m)
         return [torch.stack(data).unsqueeze(1), torch.stack(target), meta]
 
-    def __init__(self, split, rhythm, transforms=None, padding="wrap", cache=False, cache_dir="./cache",):
+    def __init__(self, split, rhythm, transforms=None, padding="wrap", cache=False, cache_dir="./cache", filter_single_train=True):
+        excluded_langs = {}
+        if filter_single_train:
+            excluded_langs = {"Danish", "Esperanto", "Hebrew",
+                              "Japanese", "Korean", "Tagalog", "Tamil"}
+
         # TODO: repeat
         assert padding in {"wrap"}
         self.transforms = transforms
@@ -54,6 +60,9 @@ class LibrivoxDataset(Dataset):
         self.path = os.path.join(root_path, split)
         self.class_to_idx = {}
         classes = sorted(os.listdir(self.path))
+        classes = [c for c in classes if c not in excluded_langs]
+
+        log.info(f"{len(classes)} langauges are being loaded")
         self.class_to_idx = {cl: idx for (idx, cl) in enumerate(classes)}
         self.n_classes = len(classes)
         self.padding = padding
@@ -90,6 +99,10 @@ class LibrivoxDataset(Dataset):
         for _, row in g.iterrows():
             self.genders[row["author_id"]] = row["gender"]
 
+        self.clip_metadata = [None] * len(self)
+        for idx in range(len(self)):
+            meta = self._get_meta(idx)
+            self.clip_metadata[idx] = meta
         log.info("Finished loading metadata!")
 
     def _load_clip(self, idx):
@@ -141,6 +154,46 @@ class LibrivoxDataset(Dataset):
 
         if self.padding == "wrap":
             return np.pad(sound, (0, length-sound.shape[0]), "wrap")
+
+    def sample_authors(self, all_meta, same_lang):
+        """
+            Returns clips (same lang, diff author) if y=1 or (diff lang, diff speaker) if y=0, 
+        """
+
+        batch = []
+        for meta, same in zip(all_meta, same_lang):
+            clip_id = meta["path"]
+            author_id = meta["author_id"]
+            lang = meta["language"]
+            # print(meta, same)
+            allowed_ids = list()
+            allowed_meta = list()
+            for idx, m in enumerate(self.clip_metadata):
+                if m["author_id"] == author_id:
+                    continue
+
+                # if same_lang, then only same language is allowed
+                if same and m["language"] != lang:
+                    continue
+                elif not same and m["language"] == lang:
+                    # if not same_lang, skip clips where the lang is the same
+                    # this assumes that one speaker can have multiple languages
+                    continue
+
+                allowed_ids.append(idx)
+                allowed_meta.append(m)
+
+            # if same:
+            #     assert all(m["author_id"] !=
+            #                author_id and m["language"] == lang for m in allowed_meta)
+            # else:
+            #     assert all(m["author_id"] !=
+            #                author_id and m["language"] != lang for m in allowed_meta)
+
+            clip_idx = random.choice(allowed_ids)
+            batch.append(self[clip_idx])
+
+        return self.collate_fn(batch)
 
     def __getitem__(self, idx):
         meta = self._get_meta(idx)

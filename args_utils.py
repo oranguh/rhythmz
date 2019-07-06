@@ -2,6 +2,7 @@ import argparse
 
 
 def add_train_args(parser):
+    n_epochs_default = 30
     parser.add_argument("--features", type=str,
                         choices=["ms", "raw"],
                         required=True,
@@ -14,7 +15,7 @@ def add_train_args(parser):
                         type=float, default=1e-3, help="learning rate")
     parser.add_argument("--batch-norm", dest="batch_norm",
                         action="store_true", default=False, help="(flag) use BN in features")
-    parser.add_argument("--epochs", type=int, default=30,
+    parser.add_argument("--epochs", type=int, default=n_epochs_default,
                         help="batch size for training")
     parser.add_argument("--results-path", dest="results_path", type=str,
                         default="results", help="location to store results")
@@ -26,6 +27,8 @@ def add_train_args(parser):
                         help="num workers to load data")
     parser.add_argument("--weight-decay", dest="weight_decay", default=0,
                         type=float, help="weight decay for Adam")
+    parser.add_argument("--feature-training-epochs", dest="feature_training_epochs", default=-1, type=int,
+                        help="(n): if n positive, mode 2 classifier is trained for that n epochs and the features are then frozen")
 
 
 def get_argparser():

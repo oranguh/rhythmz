@@ -1,3 +1,5 @@
+*.png
+*.zip
 logs
 .ipynb_checkpoints/
 datasets

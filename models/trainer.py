@@ -1,13 +1,14 @@
 import os
 import json
 import time
+import random
 import logging
 import numpy as np
 
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from torch.nn.modules.loss import CrossEntropyLoss
+from torch.nn.modules.loss import CrossEntropyLoss, BCEWithLogitsLoss
 
 from models import evaluate
 from models import classifier
@@ -31,6 +32,7 @@ class Trainer:
         self.learning_rate = args.learning_rate
         self.weight_decay = args.weight_decay
         self.batch_norm = args.batch_norm
+        self.feature_training_epochs = args.feature_training_epochs
 
         sets = {"train", "val", "test"}
 
@@ -47,14 +49,12 @@ class Trainer:
 
         self.device = torch.device(args.device)
 
-        self.clf = classifier.LibrivoxAudioClassifier(
+        self.clf = classifier.LibrivoxAudioClassifier2(
             self.features, self.datasets["train"].n_classes, self.device, self.batch_norm)
 
         self.clf = self.clf.to(self.device)
 
         mkdir(self.results_path)
-
-        self.criterion = CrossEntropyLoss().to(self.device)
 
     def train_epoch(self, epoch, optimizer, split):
 
@@ -64,6 +64,7 @@ class Trainer:
             self.clf.eval()
 
         self.clf = self.clf.to(self.device)
+        criterion = CrossEntropyLoss().to(self.device)
 
         cm = evaluate.ConfusionMatrix()
         epoch_loss = 0.0
@@ -82,7 +83,7 @@ class Trainer:
 
             with torch.set_grad_enabled(split == "train"):
                 output = self.clf(x)
-                loss = self.criterion(output, y.view(-1))
+                loss = criterion(output, y.view(-1))
 
                 y_pred = torch.softmax(output,
                                        dim=1).argmax(1)
@@ -117,6 +118,77 @@ class Trainer:
 
         return metrics, cm.mat
 
+    def train_epoch_features_only(self, epoch, optimizer):
+        split = "train"  # split is always train
+
+        self.clf = self.clf.to(self.device)
+
+        epoch_loss = 0.0
+        epoch_correct = 0
+        epoch_samples = 0
+        start_time = time.time()
+
+        correct = 0
+        total = 0
+
+        criterion = BCEWithLogitsLoss().to(self.device)
+
+        total_batches = (self.dataset_sizes[split] // self.batch_size) + 1
+        for batch_idx, (x, y, meta) in enumerate(self.dataloaders[split], 1):
+            x = x.to(self.device)
+            y = y.to(self.device)
+
+            same = np.array([random.choice([True, False])
+                             for _ in range(x.size(0))])
+            x_other, y_other, meta_other = self.datasets[split].sample_authors(
+                meta, same)
+
+            x_other = x_other.to(self.device)
+
+            # is this correct?
+            y_speaker = torch.zeros(x.size(0)).to(self.device)
+            y_speaker[np.where(same)] = 1
+
+            # print(sum(same), y_speaker.sum())
+
+            optimizer.zero_grad()
+
+            output = self.clf.forward2(x, x_other)
+            loss = criterion(output, y_speaker)
+
+            loss.backward()
+            optimizer.step()
+
+            y_speaker_pred = torch.sigmoid(output).detach()
+            y_speaker_pred[y_speaker_pred > 0.5] = 1
+            y_speaker_pred[y_speaker_pred <= 0.5] = 0
+
+            correct += (y_speaker == y_speaker_pred).sum().item()
+            total += len(x)
+            epoch_correct += correct
+
+            if batch_idx % 10 == 0:
+                log.info(
+                    f"{batch_idx}/{total_batches}: Loss: {loss}, Accuracy: {correct/total}")
+                correct = 0
+                total = 0
+
+            # get un-normalized loss
+            batch_loss = loss.item() * len(x)
+            epoch_loss += batch_loss
+            epoch_samples += len(x)
+
+        metrics = {}
+        metrics["epoch_loss"] = epoch_loss / epoch_samples
+        metrics["epoch"] = epoch
+        metrics["time"] = time.time() - start_time
+        metrics["epoch_accuracy"] = epoch_correct / float(epoch_samples)
+
+        log.info("Feature Training Epoch {} complete in {} seconds. Loss: {}".format(
+            epoch, round(time.time() - start_time), epoch_loss))
+
+        return metrics
+
     def train(self):
 
         model_path = os.path.join(self.results_path, self.model_id)
@@ -125,14 +197,45 @@ class Trainer:
         mkdir(epochs_path)
         cm_path = os.path.join(model_path, "confusion_matrix")
         mkdir(cm_path)
-
-        optimizer = Adam(self.clf.parameters(),
-                         lr=self.learning_rate, weight_decay=self.weight_decay)
+        feature_epochs_path = os.path.join(model_path, "feat_epochs")
+        mkdir(feature_epochs_path)
 
         best_val_score = 0
         best_model = self.clf.state_dict()
 
-        for epoch in range(self.n_epochs):
+        # first if the feature_training_epochs is positive, train for that many epochs
+        if self.feature_training_epochs > 0:
+            assert self.feature_training_epochs < self.n_epochs
+
+            params = []
+            params.extend(self.clf.aux_clf.parameters())
+            params.extend(self.clf.layers.parameters())
+
+            optimizer = Adam(params, lr=self.learning_rate,
+                             weight_decay=self.weight_decay)
+
+            for f_epoch in range(self.feature_training_epochs):
+                metrics = self.train_epoch_features_only(f_epoch, optimizer)
+                torch.save(metrics, os.path.join(
+                    feature_epochs_path, "{}_metrics.pkl".format(f_epoch)))
+
+            # we now freeze the features
+            self.clf.aux_clf.requires_grad = False
+            self.clf.layers.requires_grad = False
+            self.clf.classifier.requires_grad = True
+
+            # learn only the classifier
+            optimizer = Adam(self.clf.classifier.parameters(),
+                             lr=self.learning_rate,
+                             weight_decay=self.weight_decay)
+
+            trained_epochs = self.feature_training_epochs
+        else:
+            trained_epochs = 0
+            optimizer = Adam(self.clf.parameters(),
+                             lr=self.learning_rate, weight_decay=self.weight_decay)
+
+        for epoch in range(self.n_epochs - trained_epochs):
             train_metrics, cm_train = self.train_epoch(
                 epoch, optimizer, "train")
             val_metrics, cm_val = self.train_epoch(epoch, None, "val")

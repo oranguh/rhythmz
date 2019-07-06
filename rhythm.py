@@ -6,7 +6,7 @@ import torch
 import numpy as np
 
 from process import process
-from models import trainer
+from models import trainer, classifier
 from args_utils import get_argparser
 from data.stats import ComputeMean
 
